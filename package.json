@@ -1,0 +1,11 @@
+{
+  "name": "taiwan-rip",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node --test",
+    "demo-data": "node tools/generate-demo-data.mjs > data/incidents.json",
+    "convert:a1": "node tools/convert-a1.mjs"
+  }
+}
