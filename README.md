@@ -20,6 +20,37 @@ python3 -m http.server 8000
 
 可直接部署到 GitHub Pages / Netlify / Cloudflare Pages。
 
+## 部署到 Vercel（CI/CD）
+
+`.github/workflows/ci-cd.yml` 會：
+
+| 事件 | 動作 |
+| --- | --- |
+| 開 PR／PR 有新 commit | 跑 `npm test`、`npm run build` → 通過後部署 **預覽網址**，並自動在 PR 留言（同一則留言會更新） |
+| 合併／push 到 `main` | 跑測試 → 通過後部署 **正式站** |
+| Actions 頁面手動執行 | 部署目前分支（在 `main` 上即正式站） |
+
+測試失敗就不會部署。`npm test` 除了轉換腳本，也會檢查 `data/incidents.json`、`data/temples.json` 格式與 `index.html` 引用的檔案都存在，避免把壞掉的資料部署上去。
+
+### 第一次設定（約 5 分鐘）
+
+1. **建立 Vercel 專案並取得 ID**：在本機專案資料夾執行
+   ```bash
+   npx vercel@60.1.3 link
+   cat .vercel/project.json   # 會看到 orgId 與 projectId
+   ```
+   （或在 vercel.com 新增專案後，到 Project Settings → General 找 Project ID，Team/帳號 Settings 找 ID。）
+2. **建立權杖**：到 <https://vercel.com/account/tokens> 建立一個 token。
+3. **在 GitHub 設定 secrets**：repo 的 Settings → Secrets and variables → Actions → New repository secret，新增
+   `VERCEL_TOKEN`、`VERCEL_ORG_ID`、`VERCEL_PROJECT_ID`。
+4. 開一個 PR 或 push 到 `main` 就會自動部署。
+
+還沒設定 secrets 前，部署步驟會顯示警告並略過，測試照常執行。
+
+`vercel.json` 設定了 `git.deploymentEnabled: false`：即使在 Vercel 後台連結了這個 GitHub repo，也只會由 GitHub Actions 部署（先測試再上線），不會重複部署。建置會把 `index.html`、`css/`、`js/`、`data/` 複製到 `dist/`，`tools/`、`tests/` 不會上線。
+
+本機預覽建置結果：`npm run build && python3 -m http.server 8000 -d dist`。
+
 ## 匯入真實資料
 
 在面板「匯入資料」上傳 CSV 或 JSON（也支援 GeoJSON Point），資料只在瀏覽器內處理。
@@ -79,7 +110,10 @@ data/incidents.json      示範事件資料（隨機產生）
 data/temples.json        精選宮廟（座標為概略位置）
 tools/generate-demo-data.mjs  示範資料產生器
 tools/convert-a1.mjs     A1 交通事故 CSV → incidents.json
-tests/                   轉換腳本測試（npm test）
+tools/build.mjs          建置：複製靜態檔到 dist/
+tests/                   轉換腳本與網站資料檢查（npm test）
+vercel.json              Vercel 建置設定與安全標頭
+.github/workflows/ci-cd.yml  CI/CD：測試 → 部署預覽／正式站
 ```
 
 ## 分級方法與限制

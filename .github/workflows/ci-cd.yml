@@ -1,0 +1,105 @@
+# CI：每個 PR 與 push 都跑測試與建置。
+# CD：測試通過後用 Vercel CLI 部署 —— PR 部署預覽網址並留言在 PR 上，main 部署正式站。
+#
+# 需要在 GitHub repo 的 Settings → Secrets and variables → Actions 設定：
+#   VERCEL_TOKEN       Vercel 個人存取權杖（https://vercel.com/account/tokens）
+#   VERCEL_ORG_ID      .vercel/project.json 裡的 orgId
+#   VERCEL_PROJECT_ID  .vercel/project.json 裡的 projectId
+# 還沒設定時部署步驟會略過（顯示警告），不會讓 CI 失敗。
+
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_CLI: vercel@60.1.3
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    # 外部 fork 的 PR 拿不到 secrets，不部署
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: deploy-${{ github.event_name == 'pull_request' && github.head_ref || 'production' }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    environment:
+      name: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      TARGET: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+    steps:
+      - name: Check Vercel secrets
+        id: secrets
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::warning::尚未設定 VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID，略過部署。設定方式見 README「部署到 Vercel」。"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.secrets.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.secrets.outputs.ok == 'true'
+        with:
+          node-version: 22
+
+      - name: Pull Vercel project settings
+        if: steps.secrets.outputs.ok == 'true'
+        run: npx --yes "$VERCEL_CLI" pull --yes --environment="$TARGET" --token="$VERCEL_TOKEN"
+
+      - name: Build
+        if: steps.secrets.outputs.ok == 'true'
+        run: |
+          if [ "$TARGET" = production ]; then PROD=--prod; fi
+          npx --yes "$VERCEL_CLI" build $PROD --token="$VERCEL_TOKEN"
+
+      - name: Deploy
+        id: deploy
+        if: steps.secrets.outputs.ok == 'true'
+        run: |
+          if [ "$TARGET" = production ]; then PROD=--prod; fi
+          url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt $PROD --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### 🚀 已部署（$TARGET）：$url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment preview URL on PR
+        if: steps.secrets.outputs.ok == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        with:
+          script: |
+            const marker = '<!-- vercel-preview -->';
+            const body = `${marker}\n🔍 **Vercel 預覽**：${process.env.URL}\n\n（commit ${context.sha.slice(0, 7)}）`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const mine = comments.find((c) => c.body?.includes(marker));
+            if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });
