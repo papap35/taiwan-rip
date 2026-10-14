@@ -39,7 +39,33 @@ CSV 欄位：
 - 政府資料開放平臺（data.gov.tw）：「A1 類道路交通事故」（含經緯度，為 30 日內死亡事故）、各縣市警察局竊盜案件點位。
 - 刑案統計多為縣市／月份層級，沒有點位時可用鄉鎮中心點代替（請在 `title` 註明）。
 
-要替換預設資料，把轉好的 JSON（`{ "incidents": [...] }`）放到 `data/incidents.json` 即可，並把 `index.html` 裡「目前為示範資料」提示移除或改寫。
+### A1 交通事故轉換腳本
+
+從政府資料開放平臺下載 A1 類交通事故 CSV（[即時 A1](https://data.gov.tw/dataset/12818)、[歷史交通事故](https://data.gov.tw/dataset/12197)、各年度「傷亡道路交通事故資料」），然後：
+
+```bash
+# 轉換一個或多個檔案（也可以直接給下載網址），輸出到 data/incidents.json
+node tools/convert-a1.mjs ~/Downloads/112年度A1交通事故資料.csv ~/Downloads/113年度A1交通事故資料.csv
+
+# 之後每週追加最新的即時 A1 資料，保留既有紀錄並自動去重
+node tools/convert-a1.mjs ~/Downloads/A1.csv --append
+
+# 只保留某日期之後
+node tools/convert-a1.mjs A1.csv --since 2024-01-01
+```
+
+腳本會：
+
+- 自動判斷 UTF-8／Big5 編碼，支援西元 `20230105`、民國 `112年01月05日 07時30分00秒`、`1120105`、`112/1/5` 等日期格式；時間欄前導 0 被省略（如 `73000`）會補回 6 碼。
+- 年度檔一列是一位「當事者」，同一事故多列會依日期時間＋座標合併成一起，車種彙整、傷亡數不重複相加。
+- 略過檔尾說明列與台澎金馬範圍外的座標；多人死亡事故嚴重度記為 5，其餘為 4。
+- 輸出的 `meta.demo` 為 `false`，網頁就不會再顯示「示範資料」提示；彈出視窗會顯示時間、傷亡人數、初步肇因與車種。
+
+`--append` 會丟掉示範資料，只保留真實紀錄。測試：`npm test`（使用 `tests/fixtures` 中的虛構樣本）。
+
+> 官方欄位名稱可能隨年度調整；若轉出筆數為 0，請把 CSV 表頭貼給維護者，在 `tools/convert-a1.mjs` 的 `col(...)` 候選名稱中補上。
+
+要替換預設資料，把轉好的 JSON（`{ "incidents": [...] }`）放到 `data/incidents.json` 即可；JSON 的 `meta.demo` 設為 `false` 時就不會顯示「目前為示範資料」提示。
 
 ## 檔案結構
 
@@ -52,6 +78,8 @@ js/data.js               類別定義、CSV/JSON 解析與正規化
 data/incidents.json      示範事件資料（隨機產生）
 data/temples.json        精選宮廟（座標為概略位置）
 tools/generate-demo-data.mjs  示範資料產生器
+tools/convert-a1.mjs     A1 交通事故 CSV → incidents.json
+tests/                   轉換腳本測試（npm test）
 ```
 
 ## 分級方法與限制

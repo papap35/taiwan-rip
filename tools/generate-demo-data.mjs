@@ -113,6 +113,7 @@ out.forEach((d, i) => (d.id = `demo-${String(i + 1).padStart(5, '0')}`));
 process.stdout.write(JSON.stringify({
   meta: {
     name: '示範資料（隨機產生，非真實事件）',
+    demo: true,
     generated: 'tools/generate-demo-data.mjs',
     disclaimer: '本檔案所有事件皆為程式隨機產生，僅供展示介面功能。',
   },

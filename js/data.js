@@ -30,6 +30,8 @@ export function normalizeType(raw) {
   return 'other';
 }
 
+const optNum = (v) => (v == null || v === '' || !Number.isFinite(+v) ? undefined : +v);
+
 /** 把任意來源的一筆紀錄轉成內部格式；不合法回傳 null */
 export function normalizeIncident(r, idx) {
   const lat = parseFloat(r.lat ?? r.latitude ?? r.緯度);
@@ -50,6 +52,12 @@ export function normalizeIncident(r, idx) {
     title: r.title ?? r.標題 ?? TYPES[type].label,
     county: r.county ?? r.縣市 ?? '',
     source: r.source ?? r.url ?? '',
+    // A1 交通事故等來源的附加欄位（沒有就是 undefined）
+    time: r.time || undefined,
+    deaths: optNum(r.deaths),
+    injuries: optNum(r.injuries),
+    cause: r.cause || r.肇因 || undefined,
+    vehicles: Array.isArray(r.vehicles) ? r.vehicles.join('、') : r.vehicles || undefined,
   };
 }
 

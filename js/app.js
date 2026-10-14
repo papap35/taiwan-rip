@@ -47,8 +47,9 @@ async function init() {
     fetch('data/temples.json').then((r) => r.json()),
   ]);
   state.demo = inc.incidents.map(normalizeIncident).filter(Boolean);
+  state.defaultIsDemo = inc.meta?.demo !== false;
   state.temples = tmp.temples;
-  setData(state.demo, true);
+  setData(state.demo, state.defaultIsDemo);
   renderTemples();
 }
 
@@ -98,7 +99,10 @@ function renderIncidents(list) {
     })
       .bindPopup(() => `
         <h3>${esc(d.title)}</h3>
-        <div>${fmt(d.t)}・${esc(ty.label)}・嚴重度 ${d.severity}/5</div>
+        <div>${fmt(d.t)}${d.time ? ` ${esc(d.time.slice(0, 5))}` : ''}・${esc(ty.label)}・嚴重度 ${d.severity}/5</div>
+        ${d.deaths != null ? `<div>死亡 ${d.deaths} 人${d.injuries ? `、受傷 ${d.injuries} 人` : ''}</div>` : ''}
+        ${d.cause ? `<div>初步肇因：${esc(d.cause)}</div>` : ''}
+        ${d.vehicles ? `<div>車種：${esc(d.vehicles)}</div>` : ''}
         ${d.county ? `<div>${esc(d.county)}</div>` : ''}
         ${/^https?:\/\//.test(d.source) ? `<a href="${esc(d.source)}" target="_blank" rel="noopener">資料來源</a>` : ''}
         ${nearbyTemplesHTML(d)}`)
@@ -335,7 +339,7 @@ function bindUI() {
   $('layerTemples').addEventListener('change', renderTemples);
   $('overpassBtn').addEventListener('click', searchOSMTemples);
   $('locateBtn').addEventListener('click', locateMe);
-  $('resetData').addEventListener('click', () => setData(state.demo, true));
+  $('resetData').addEventListener('click', () => setData(state.demo, state.defaultIsDemo));
 
   $('fileInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
