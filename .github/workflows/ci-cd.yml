@@ -1,4 +1,4 @@
-# CI：每個 PR 與 push 都跑測試與建置。
+# CI：每個 PR 與 push 都跑型別檢查、單元測試、建置與端對端測試。
 # CD：測試通過後用 Vercel CLI 部署 —— PR 部署預覽網址並留言在 PR 上，main 部署正式站。
 #
 # 需要在 GitHub repo 的 Settings → Secrets and variables → Actions 設定：
@@ -29,8 +29,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end tests
+        run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
 
   deploy:
     needs: test

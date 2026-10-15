@@ -1,6 +1,6 @@
 # 台灣事件風險地圖 — Next.js 改版與功能規劃 Spec
 
-- 狀態：**草稿，待審閱**
+- 狀態：M0 已實作（見 M0 驗收）；M1 之後為草稿
 - 日期：2026-10-15
 - 範圍：把現有純靜態網站改寫為 Next.js，並分階段加入新功能
 
@@ -29,7 +29,7 @@
 
 | 里程碑 | 內容 | 預估工作量* | 需要的外部服務 |
 | --- | --- | --- | --- |
-| **M0 遷移** | Next.js 改寫，功能與現在一致；網址可分享狀態 | 3–4 天 | 無（資料仍是靜態 JSON） |
+| **M0 遷移** ✅ | Next.js 改寫，功能與現在一致；網址可分享狀態 | 3–4 天 | 無（資料仍是靜態 JSON） |
 | **M1 內容與分享** | 縣市頁、宮廟目錄、方法／資料來源頁、SEO、分享圖、PWA | 4–5 天 | 無 |
 | **M2 AI 區域解說** | 點網格或縣市 →「AI 解說」白話說明 | 2–3 天 | Claude API、資料庫（快取） |
 | **M3 資料自動化與後台** | 每日自動匯入 A1、事件 API、管理後台 | 4–5 天 | 資料庫、Vercel Cron |
@@ -49,15 +49,15 @@
 | 層 | 選擇 | 版本（鎖定） | 理由 |
 | --- | --- | --- | --- |
 | 框架 | **Next.js App Router** | `next@16.3.8`、`react@19.3.0` | Vercel 原生支援；頁面、API、Cron 同一專案 |
-| 語言 | TypeScript | `typescript@7.0.2` | 型別保護資料格式 |
+| 語言 | TypeScript | `typescript@5.9.3` | 型別保護資料格式。7.x 是改寫後的新編譯器，與 Next.js 搭配風險較高，暫用 5.9 |
 | 地圖 | **MapLibre GL + react-map-gl** 【待決定】 | `maplibre-gl@6.11.2`、`react-map-gl@8.1.3` | WebGL 繪製，上萬點不卡；內建點位聚合與熱區圖層 |
 | 底圖 | **OpenFreeMap** 向量圖磚 【待決定】 | — | 免費、免金鑰、允許正式站使用（OSM 官方圖磚伺服器的使用政策不允許正式站大量使用） |
 | 樣式 | Tailwind CSS | `tailwindcss@4.3.3` | 元件化後比手寫 CSS 好維護；保留現有深淺色配色 |
 | 資料庫＋登入 | **Supabase**（Postgres + PostGIS + Auth） 【待決定】 | `@supabase/supabase-js@2.117.2` | 一個服務包辦資料庫、地理查詢、登入、權限（RLS） |
 | 輸入驗證 | Zod | `zod@4.6.5` | API 參數與匯入資料驗證 |
 | AI | Claude API | `@anthropic-ai/sdk@0.131.0` | 區域白話解說（見第 6 節） |
-| 單元測試 | Vitest | `vitest@5.0.3` | 取代 `node:test`，支援 TS |
-| 端對端測試 | Playwright | `@playwright/test@1.63.0` | 桌機＋手機寬度煙霧測試 |
+| 單元測試 | `node:test`（Node 內建） | Node ≥ 22.18 | 原定 Vitest，但其選用相依套件觸發 npm 安裝錯誤；Node 已能直接執行 `.ts`，內建測試即可，少一個相依套件 |
+| 端對端測試 | Playwright | `@playwright/test@1.56.1` | 桌機＋手機寬度煙霧測試 |
 
 > 替代方案：若不想用 MapLibre，可用 `react-leaflet@5.0.0` 保留 Leaflet，改動最小，但正式站仍需換付費點陣圖磚。
 
@@ -93,7 +93,7 @@ lib/
 workers/
   risk.worker.ts             在 Web Worker 計算分級，拖時間軸不卡畫面
 data/                        示範資料與宮廟（M3 前仍為靜態檔）
-tests/                       Vitest 單元測試 + fixtures
+tests/                       node:test 單元測試 + fixtures
 e2e/                         Playwright
 supabase/migrations/         資料庫 schema（M2 起）
 ```
@@ -133,10 +133,12 @@ supabase/migrations/         資料庫 schema（M2 起）
 
 **驗收**
 
-- [ ] Playwright：桌機 1280px、手機 390px 跑完現有所有互動，無主控台錯誤、無橫向捲動
-- [ ] 現有 9 個測試改寫為 Vitest 後全數通過
-- [ ] 同一份資料、同一時間窗，新舊版本分級結果完全相同（自動比對測試）
-- [ ] 首頁 Lighthouse 效能 ≥ 85（手機）
+- [x] Playwright：桌機 1280px、手機 390px 跑完現有所有互動，無主控台錯誤、無橫向捲動（12 個情境）
+- [x] 既有測試全數通過（改用 `node:test`，見 3.1），另加網址狀態測試
+- [x] 同一份資料、同一時間窗，新舊版本分級結果完全相同（20 種情境快照比對）
+- [ ] 首頁 Lighthouse 效能 ≥ 85（手機）：**未達成，實測 64**（無障礙 100）。拿掉地圖時為 95，差距幾乎全來自 MapLibre 初始化與 WebGL 繪製（Total Blocking Time 2.7 秒；測試機無 GPU，以軟體繪製，會高估）。改善方向留到 M1：延後載入地圖、或改用較輕的 Leaflet
+
+實作備註：MapLibre 6 從獨立檔案載入背景 worker，建置前由 `tools/copy-maplibre-worker.mjs` 複製到 `public/maplibre/`。
 
 ### M1 — 內容與分享
 
@@ -347,7 +349,7 @@ create table temple_reports (
 
 ## 9. 測試與 CI/CD 調整
 
-- `npm test`：Vitest（現有 9 個測試 + 新元件與 API 測試）
+- `npm test`：`node:test` 單元測試（含新舊分級比對）
 - `npm run lint`、`npm run typecheck`
 - `npm run e2e`：Playwright 桌機＋手機煙霧測試（CI 中用預覽建置跑）
 - `.github/workflows/ci-cd.yml`：保留「測試 → 部署」流程；`vercel build` 直接支援 Next.js，移除 `tools/build.mjs` 與 `outputDirectory`
@@ -360,14 +362,14 @@ create table temple_reports (
 
 | # | 問題 | 建議 | 影響 |
 | --- | --- | --- | --- |
-| 1 | 地圖套件 | **MapLibre + OpenFreeMap** | 效能與正式站圖磚授權；選 Leaflet 則需付費圖磚 |
+| 1 | 地圖套件 | **MapLibre + OpenFreeMap**（M0 已採用） | 效能與正式站圖磚授權；選 Leaflet 則需付費圖磚。注意 Lighthouse 分數受 MapLibre 影響（見 M0 驗收） |
 | 2 | 資料庫＋登入 | **Supabase** | 另一選擇：Neon（Vercel 市集）＋ Auth.js，彈性較高但要自己組 |
 | 3 | 要不要做 M4 會員功能 | 先做到 M3，看使用量再決定 | M4 帶來帳號、個資與客服成本 |
 | 4 | AI 模型與每日預算 | `claude-opus-5-5`（low effort），每日上限 US$28 | 改 Haiku 可大幅降成本，品質需實測 |
 | 5 | LINE 登入 | M4 再評估 | 台灣使用者習慣，但整合較複雜 |
 | 6 | 網域名稱 | — | 分享圖、SEO、Email 寄件網域 |
 | 7 | 英文版 | 放到待規劃 | 加 i18n 會影響所有頁面結構，越早決定越省事 |
-| 8 | M0 是否要換成 Tailwind | 換（一次改完） | 不換則保留現有 CSS，遷移較快 |
+| 8 | M0 是否要換成 Tailwind | 換（M0 已採用） | — |
 
 ---
 

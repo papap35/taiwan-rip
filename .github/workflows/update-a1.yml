@@ -43,7 +43,7 @@ jobs:
           ref: main
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22 # 需 22.18 以上：tools 直接 import lib/*.ts
 
       - name: Download and convert
         id: fetch
@@ -63,14 +63,14 @@ jobs:
           ADDED: ${{ steps.fetch.outputs.added }}
           TOTAL: ${{ steps.fetch.outputs.total }}
         run: |
-          if git diff --quiet -- data/incidents.json; then
+          if git diff --quiet -- public/data/incidents.json; then
             echo "資料沒有變動，不需要 commit。"
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/incidents.json
+          git add public/data/incidents.json
           git commit -m "Update A1 data: +${ADDED} incidents (total ${TOTAL})"
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"

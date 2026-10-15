@@ -1,0 +1,69 @@
+@import 'tailwindcss';
+
+/* 設計代號：沿用舊版配色，深色模式自動切換 */
+@theme {
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-ink: #1d2330;
+  --color-muted: #5d6677;
+  --color-line: #dde1e8;
+  --color-accent: #c0392b;
+  --color-notice: #fff6e0;
+  --color-notice-line: #f0c36d;
+  --shadow-float: 0 4px 18px rgba(20, 30, 50, 0.15);
+  --font-sans: system-ui, -apple-system, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #12151b;
+    --color-surface: #1b2029;
+    --color-ink: #e7eaf0;
+    --color-muted: #9aa3b4;
+    --color-line: #2d3442;
+    --color-accent: #e0584a;
+    --color-notice: #2e2716;
+    --color-notice-line: #7a6224;
+    --shadow-float: 0 4px 18px rgba(0, 0, 0, 0.5);
+  }
+}
+
+html,
+body {
+  height: 100%;
+}
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  overflow: hidden;
+}
+
+/* MapLibre 彈出視窗配合深淺色 */
+.maplibregl-popup-content {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 12px 14px;
+  border-radius: 10px;
+  max-width: min(300px, 80vw);
+}
+.maplibregl-popup-tip {
+  border-top-color: var(--color-surface) !important;
+  border-bottom-color: var(--color-surface) !important;
+}
+.maplibregl-popup-close-button {
+  color: var(--color-muted);
+  font-size: 18px;
+  padding: 0 6px;
+}
+.maplibregl-popup-content a {
+  color: var(--color-accent);
+}
+
+/* 手機版：右下角版權聲明避開時間軸 */
+@media (max-width: 767px) {
+  .maplibregl-ctrl-bottom-right {
+    margin-bottom: 128px;
+  }
+}

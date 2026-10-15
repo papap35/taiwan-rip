@@ -1,4 +1,4 @@
-// 把警政署「A1 類道路交通事故」開放資料 CSV 轉成地圖用的 data/incidents.json。
+// 把警政署「A1 類道路交通事故」開放資料 CSV 轉成地圖用的 public/data/incidents.json。
 //
 // 資料來源：
 //   即時交通事故資料(A1類)  https://data.gov.tw/dataset/12818
@@ -6,9 +6,9 @@
 //   各年度傷亡道路交通事故資料（例如 113 年 https://data.gov.tw/dataset/172969）
 //
 // 用法：
-//   node tools/convert-a1.mjs <csv 檔案或網址>... [--out data/incidents.json] [--append] [--since 2024-01-01]
+//   node tools/convert-a1.mjs <csv 檔案或網址>... [--out public/data/incidents.json] [--append] [--since 2024-01-01]
 //
-//   --out     輸出檔（預設 data/incidents.json）
+//   --out     輸出檔（預設 public/data/incidents.json）
 //   --append  保留輸出檔內既有的真實資料（示範資料一律丟掉），依 id 去重
 //   --since   只保留此日期（含）之後的事故
 //
@@ -19,7 +19,7 @@
 
 import { readFile, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { parseCSV, normalizeIncident } from '../js/data.js';
+import { parseCSV, normalizeIncident } from '../lib/data.ts';
 
 export const SOURCE_URL = 'https://data.gov.tw/dataset/12818';
 
@@ -208,7 +208,7 @@ export function buildOutput(lists, extraMeta = {}) {
 
 async function main(argv) {
   const inputs = [];
-  let out = 'data/incidents.json';
+  let out = 'public/data/incidents.json';
   let append = false;
   let since;
   let help = false;
@@ -221,7 +221,7 @@ async function main(argv) {
     else inputs.push(a);
   }
   if (!inputs.length || help) {
-    console.error('用法：node tools/convert-a1.mjs <csv 檔案或網址>... [--out data/incidents.json] [--append] [--since YYYY-MM-DD]');
+    console.error('用法：node tools/convert-a1.mjs <csv 檔案或網址>... [--out public/data/incidents.json] [--append] [--since YYYY-MM-DD]');
     process.exit(help ? 0 : 1);
   }
 
