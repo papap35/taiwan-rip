@@ -27,9 +27,10 @@ test('parseCasualties and guessCounty', () => {
 });
 
 test('yearly file: merges party rows, skips bad coords and footer', async () => {
-  const { incidents, skipped } = convertRows(await load('a1-yearly.csv'));
+  const { incidents, skipped, nonA1 } = convertRows(await load('a1-yearly.csv'));
   assert.equal(incidents.length, 2);
   assert.equal(skipped, 3); // abc 經度、外海座標、說明列
+  assert.equal(nonA1, 1); // A2 受傷事故不算進來
 
   const [taipei, freeway] = incidents;
   assert.equal(taipei.date, '2023-01-05');

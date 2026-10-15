@@ -7,7 +7,8 @@
     "build": "node tools/build.mjs",
     "test": "node --test",
     "demo-data": "node tools/generate-demo-data.mjs > data/incidents.json",
-    "convert:a1": "node tools/convert-a1.mjs"
+    "convert:a1": "node tools/convert-a1.mjs",
+    "update:a1": "node tools/fetch-a1.mjs"
   },
   "engines": {
     "node": ">=20"
