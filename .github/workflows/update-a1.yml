@@ -1,0 +1,83 @@
+# 自動更新 A1 交通事故資料：下載 → 轉換 → 測試 → commit 到 main → 觸發部署。
+#
+# 手動執行：Actions → Update A1 data → Run workflow
+# 每週排程：預設關閉。確認手動執行結果沒問題後，到 Settings → Secrets and variables →
+#   Actions → Variables 新增 A1_SCHEDULE_ENABLED = true 即開啟（每週一 17:17 台灣時間）。
+# 下載網址：預設透過 data.gov.tw 自動查詢；若平臺改版查不到，可新增 Variable
+#   A1_URLS（CSV 網址，逗號分隔）直接指定。
+
+name: Update A1 data
+
+on:
+  workflow_dispatch:
+    inputs:
+      datasets:
+        description: data.gov.tw 資料集編號（逗號分隔）。12818 = 即時 A1；補歷史可加年度資料集
+        default: '12818'
+      keep_years:
+        description: 保留最近幾年（0 = 全部）
+        default: '3'
+      dry_run:
+        description: 只試跑，不 commit
+        type: boolean
+        default: false
+  schedule:
+    - cron: '17 9 * * 1' # UTC 週一 09:17 = 台灣 17:17
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: update-a1
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.event_name == 'workflow_dispatch' || vars.A1_SCHEDULE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download and convert
+        id: fetch
+        env:
+          A1_URLS: ${{ vars.A1_URLS }}
+          DATASETS: ${{ inputs.datasets || '12818' }}
+          KEEP_YEARS: ${{ inputs.keep_years || '3' }}
+        run: node tools/fetch-a1.mjs --datasets "$DATASETS" --keep-years "$KEEP_YEARS"
+
+      - name: Validate data
+        run: npm test
+
+      - name: Commit to main
+        id: commit
+        if: ${{ !inputs.dry_run }}
+        env:
+          ADDED: ${{ steps.fetch.outputs.added }}
+          TOTAL: ${{ steps.fetch.outputs.total }}
+        run: |
+          if git diff --quiet -- data/incidents.json; then
+            echo "資料沒有變動，不需要 commit。"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/incidents.json
+          git commit -m "Update A1 data: +${ADDED} incidents (total ${TOTAL})"
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # 用 GITHUB_TOKEN push 不會觸發其他 workflow，所以明確啟動部署
+      - name: Trigger deploy
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ci-cd.yml --ref main --repo "$GITHUB_REPOSITORY"

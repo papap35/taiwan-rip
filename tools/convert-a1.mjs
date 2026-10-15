@@ -102,8 +102,15 @@ export function guessCounty(unit, place) {
 export function convertRows(rows, { since } = {}) {
   const byKey = new Map();
   let skipped = 0;
+  let nonA1 = 0;
 
   for (const r of rows) {
+    // 年度「傷亡道路交通事故」檔混有 A2（受傷）事故，只留 A1
+    const category = col(r, '事故類別名稱', '事故類別');
+    if (category && !/A1/i.test(category)) {
+      nonA1++;
+      continue;
+    }
     // 年度檔：發生日期 + 發生時間 分兩欄；即時檔：日期時間都在「發生時間」
     const dateRaw = col(r, '發生日期');
     const timeRaw = col(r, '發生時間');
@@ -160,16 +167,43 @@ export function convertRows(rows, { since } = {}) {
     else skipped++;
   }
   out.sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time));
-  return { incidents: out, skipped };
+  return { incidents: out, skipped, nonA1 };
 }
 
-async function readInput(src) {
+export async function readInput(src) {
   if (/^https?:\/\//.test(src)) {
     const res = await fetch(src);
     if (!res.ok) throw new Error(`下載失敗 ${res.status}：${src}`);
     return decode(new Uint8Array(await res.arrayBuffer()));
   }
   return decode(await readFile(src));
+}
+
+/** 讀取既有輸出檔中的真實資料（示範資料一律丟掉）；檔案不存在回傳空陣列 */
+export async function readExisting(path) {
+  try {
+    const prev = JSON.parse(await readFile(path, 'utf8'));
+    return (prev.incidents ?? []).filter((d) => d.source !== 'demo');
+  } catch {
+    return [];
+  }
+}
+
+/** 合併多批事故（後面的覆蓋前面同 id 的），排序後組成輸出檔內容 */
+export function buildOutput(lists, extraMeta = {}) {
+  const byId = new Map();
+  for (const list of lists) for (const d of list) byId.set(d.id, d);
+  const incidents = [...byId.values()].sort((x, y) => (x.date + (x.time ?? '')).localeCompare(y.date + (y.time ?? '')));
+  const meta = {
+    name: 'A1 類道路交通事故（警政署開放資料）',
+    demo: false,
+    source: SOURCE_URL,
+    range: incidents.length ? [incidents[0].date, incidents.at(-1).date] : [],
+    converted: new Date().toISOString().slice(0, 10),
+    note: 'A1 為當場或 24 小時內死亡之交通事故；當事者順位與肇因為警方初步研判，非鑑定結果。',
+    ...extraMeta,
+  };
+  return { meta, incidents };
 }
 
 async function main(argv) {
@@ -191,36 +225,24 @@ async function main(argv) {
     process.exit(help ? 0 : 1);
   }
 
-  const byId = new Map();
+  const lists = [];
   if (append) {
-    try {
-      const prev = JSON.parse(await readFile(out, 'utf8'));
-      for (const d of prev.incidents ?? []) if (d.source !== 'demo') byId.set(d.id, d);
-      console.error(`保留既有資料 ${byId.size} 筆`);
-    } catch {
-      console.error(`找不到 ${out}，將建立新檔`);
-    }
+    const prev = await readExisting(out);
+    console.error(`保留既有資料 ${prev.length} 筆`);
+    lists.push(prev);
   }
 
   for (const src of inputs) {
-    const { incidents, skipped } = convertRows(parseCSV(await readInput(src)), { since });
-    for (const d of incidents) byId.set(d.id, d);
-    console.error(`${src}：轉出 ${incidents.length} 起事故，略過 ${skipped} 列`);
+    const { incidents, skipped, nonA1 } = convertRows(parseCSV(await readInput(src)), { since });
+    lists.push(incidents);
+    console.error(`${src}：轉出 ${incidents.length} 起事故，略過 ${skipped} 列${nonA1 ? `，非 A1 ${nonA1} 列` : ''}`);
   }
 
-  const incidents = [...byId.values()].sort((x, y) => (x.date + (x.time ?? '')).localeCompare(y.date + (y.time ?? '')));
+  const { meta, incidents } = buildOutput(lists);
   if (!incidents.length) {
     console.error('沒有任何有效事故，未寫入檔案。請確認 CSV 是否含「發生日期／發生時間、經度、緯度」欄位。');
     process.exit(1);
   }
-  const meta = {
-    name: 'A1 類道路交通事故（警政署開放資料）',
-    demo: false,
-    source: SOURCE_URL,
-    range: [incidents[0].date, incidents.at(-1).date],
-    converted: new Date().toISOString().slice(0, 10),
-    note: 'A1 為當場或 24 小時內死亡之交通事故；當事者順位與肇因為警方初步研判，非鑑定結果。',
-  };
   await writeFile(out, JSON.stringify({ meta, incidents }));
   console.error(`已寫入 ${out}：共 ${incidents.length} 起（${meta.range[0]} ～ ${meta.range[1]}）`);
 }

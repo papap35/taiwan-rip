@@ -96,6 +96,21 @@ node tools/convert-a1.mjs A1.csv --since 2024-01-01
 
 > 官方欄位名稱可能隨年度調整；若轉出筆數為 0，請把 CSV 表頭貼給維護者，在 `tools/convert-a1.mjs` 的 `col(...)` 候選名稱中補上。
 
+### 自動更新（GitHub Actions）
+
+`.github/workflows/update-a1.yml` 會從 data.gov.tw 下載 A1 資料 → 轉換 → 跑測試 → commit 到 `main` → 觸發正式站部署。
+
+1. **先手動試跑**：Actions → **Update A1 data** → Run workflow（可勾「只試跑」先看結果，摘要會顯示新增幾筆）。
+2. **補歷史資料**：手動執行時在「資料集編號」加上年度資料集，例如 `12818,177136`（年度檔混有 A2，腳本只會取 A1）。
+3. **開啟每週排程**：Settings → Secrets and variables → Actions → Variables 新增 `A1_SCHEDULE_ENABLED` = `true`（每週一 17:17 台灣時間）。
+4. **查不到下載網址時**：新增 Variable `A1_URLS`，填 CSV 下載網址（逗號分隔），會略過自動查詢。
+
+安全機制：下載失敗、下載到網頁、轉出 0 筆、或超過一半資料列無法解析時，workflow 會失敗且**不會覆蓋**現有資料，GitHub 會寄失敗通知。新資料與既有資料依 id 合併去重，預設保留最近 3 年。第一次成功執行會移除示範資料。
+
+本機也能跑：`npm run update:a1`（`node tools/fetch-a1.mjs --help` 看參數）。
+
+> 注意：workflow 會直接 push 到 `main`。若之後替 `main` 加上「必須經過 PR」的分支保護，需要改成開 PR 的方式。另外請確認 repo 的預設分支是 `main`，排程只會在預設分支上執行。
+
 要替換預設資料，把轉好的 JSON（`{ "incidents": [...] }`）放到 `data/incidents.json` 即可；JSON 的 `meta.demo` 設為 `false` 時就不會顯示「目前為示範資料」提示。
 
 ## 檔案結構
@@ -110,10 +125,12 @@ data/incidents.json      示範事件資料（隨機產生）
 data/temples.json        精選宮廟（座標為概略位置）
 tools/generate-demo-data.mjs  示範資料產生器
 tools/convert-a1.mjs     A1 交通事故 CSV → incidents.json
+tools/fetch-a1.mjs       自動下載 data.gov.tw 的 A1 資料並更新（含安全檢查）
 tools/build.mjs          建置：複製靜態檔到 dist/
 tests/                   轉換腳本與網站資料檢查（npm test）
 vercel.json              Vercel 建置設定與安全標頭
 .github/workflows/ci-cd.yml  CI/CD：測試 → 部署預覽／正式站
+.github/workflows/update-a1.yml  每週自動更新 A1 資料
 ```
 
 ## 分級方法與限制
