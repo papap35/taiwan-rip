@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <title>台灣事件風險地圖</title>
+  <path d="M60 113 C60 113 21 72 21 47 A39 39 0 1 1 99 47 C99 72 60 113 60 113 Z" fill="#c0392b"/>
+  <rect x="47" y="20" width="26" height="6" rx="3" fill="#f2c14e"/>
+  <ellipse cx="60" cy="45" rx="19" ry="16.5" fill="#ffffff"/>
+  <path d="M44 39 H76 M41.5 45 H78.5 M44 51 H76" stroke="#c0392b" stroke-opacity="0.35" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <rect x="47" y="63" width="26" height="6" rx="3" fill="#f2c14e"/>
+  <rect x="58.5" y="69" width="3" height="8" rx="1.5" fill="#f2c14e"/>
+</svg>

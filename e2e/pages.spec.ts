@@ -92,6 +92,9 @@ test('share previews, sitemap, robots and manifest are served', async ({ page, r
   expect(manifest.display).toBe('standalone');
   expect(manifest.icons.map((i: { sizes: string }) => i.sizes)).toContain('512x512');
   expect((await request.get('/icons/icon-512.png')).ok()).toBe(true);
+  expect((await request.get('/brand/logo-mark.svg')).ok()).toBe(true);
+  await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveCount(1);
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
 });
 
 test.describe('offline', () => {

@@ -6,6 +6,8 @@ import { ImageResponse } from 'next/og';
 export const OG_SIZE = { width: 1200, height: 630 };
 
 const font = (w: number) => readFile(join(process.cwd(), 'app', 'fonts', `NotoSansTC-og-${w}.ttf`));
+const logo = () =>
+  readFile(join(process.cwd(), 'public', 'brand', 'logo-mark.svg')).then((b) => `data:image/svg+xml;base64,${b.toString('base64')}`);
 
 interface OgProps {
   eyebrow?: string;
@@ -40,7 +42,7 @@ function dotMap(points: { lat: number; lng: number }[], w: number, h: number) {
 }
 
 export async function renderOg(p: OgProps) {
-  const [regular, bold] = await Promise.all([font(400), font(700)]);
+  const [regular, bold, mark] = await Promise.all([font(400), font(700), logo()]);
   const MAP = 470;
   const dots = dotMap(p.points, MAP, MAP);
   return new ImageResponse(
@@ -48,7 +50,9 @@ export async function renderOg(p: OgProps) {
       <div style={{ width: '100%', height: '100%', display: 'flex', background: '#f6f7f9', fontFamily: 'NotoSansTC', color: '#1d2330' }}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '56px 0 52px 64px' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 28, color: '#c0392b', fontWeight: 700, minHeight: 40 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 28, color: '#c0392b', fontWeight: 700, minHeight: 56 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={mark} width={56} height={56} alt="" />
               {p.eyebrow}
               {p.demo && (
                 <div style={{ display: 'flex', fontSize: 22, color: '#7a5a12', background: '#fff6e0', border: '2px solid #f0c36d', borderRadius: 10, padding: '2px 12px' }}>
