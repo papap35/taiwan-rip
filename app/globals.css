@@ -10,6 +10,8 @@
   --color-accent: #c0392b;
   --color-notice: #fff6e0;
   --color-notice-line: #f0c36d;
+  /* 圖表色（已用 dataviz 驗證工具檢查亮度、彩度與對比） */
+  --color-chart: #3b6fd4;
   --shadow-float: 0 4px 18px rgba(20, 30, 50, 0.15);
   --font-sans: system-ui, -apple-system, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
 }
@@ -24,6 +26,7 @@
     --color-accent: #e0584a;
     --color-notice: #2e2716;
     --color-notice-line: #7a6224;
+    --color-chart: #5a8ee8;
     --shadow-float: 0 4px 18px rgba(0, 0, 0, 0.5);
   }
 }
@@ -35,7 +38,6 @@ body {
 body {
   background: var(--color-bg);
   color: var(--color-ink);
-  overflow: hidden;
 }
 
 /* MapLibre 彈出視窗配合深淺色 */

@@ -7,6 +7,11 @@ RWD 網頁地圖，顯示台灣的死亡事故與社會案件，並提供：
 - **宗教地圖／收驚**：內建精選宮廟（標示可收驚者），點事件或網格時列出最近的收驚／祈福宮廟並可導航；也可「搜尋目前畫面附近宮廟」從 OpenStreetMap 即時查詢，或用「我的位置」找最近的收驚宮廟並顯示所在區域的分級。
 - **手機版**：設定面板會變成底部抽屜，地圖與時間軸全螢幕；支援深色模式。
 - **分享目前畫面**：時間、時間窗、類別與地圖位置都會寫進網址（例：`/?end=2025-07-28&window=30&lat=25.04&lng=121.53&z=12`），按「分享」即可複製或用手機分享。
+- **縣市統計**（`/county`、`/county/taipei`）：近 30／90／365 天事件與死亡事故數（含去年同期比較）、近 24 個月趨勢圖、類別分布、風險較高的 5 個網格（連回地圖）、該縣市收驚宮廟。
+- **宮廟目錄**（`/temples`）：依縣市與「可收驚」篩選，每間宮廟有獨立頁面與導航、回報更正連結。
+- **說明頁**：分級方法與限制、資料來源與更新紀錄、免責與隱私。
+- **分享預覽與搜尋**：每頁有標題與描述，縣市頁有專屬分享圖（含數字與事件點小地圖），並提供 `sitemap.xml`、`robots.txt`。
+- **可安裝（PWA）**：可加到手機主畫面；看過一次後，離線也能顯示最後載入的資料並提示「離線中」。
 
 > ⚠️ `public/data/incidents.json` 預設是 `tools/generate-demo-data.mjs` **隨機產生的示範資料，不是真實事件**。上線前請換成真實資料來源。
 
@@ -27,6 +32,13 @@ npm run build && npm run e2e   # 端對端測試（Playwright，桌機＋手機�
 ```
 
 第一次跑端對端測試前執行 `npx playwright install chromium`。測試會把底圖換成本機空白樣式，不需要連外。
+
+其他指令：
+
+- `npm run og-font`：分享圖用的中文字型只含用得到的字（`lib/og-text.ts`），改了分享圖文字或縣市名稱後要重跑（需連網），`npm test` 會檢查有沒有缺字。
+- `npm run icons`：重新產生網站與 PWA 圖示。
+
+正式網址：分享圖、sitemap 的絕對網址預設使用 Vercel 的正式網域；之後若綁自訂網域，在 Vercel 設定環境變數 `NEXT_PUBLIC_SITE_URL`（例如 `https://example.tw`）。
 
 ## 部署到 Vercel（CI/CD）
 
@@ -124,17 +136,25 @@ node tools/convert-a1.mjs A1.csv --since 2024-01-01
 ## 檔案結構
 
 ```
-app/                     Next.js 頁面（layout、首頁、全域樣式）
+app/                     Next.js 頁面（layout、首頁、全域樣式、manifest、sitemap、robots、分享圖）
+app/(site)/              內容頁：county、temples、about（共用頂部選單與頁尾）
+app/fonts/               分享圖用的中文字型子集
 components/MapApp.tsx    首頁狀態：資料載入、篩選、網址同步、播放、匯入、分享
 components/map/          MapLibre 地圖（事件聚合點、危險網格、宮廟）與彈出視窗
 components/panel/        設定面板（手機為底部抽屜）
 components/timeline/     時間軸與每週長條圖
+components/charts/       縣市頁圖表（每月趨勢、類別分布）
 hooks/useRiskCells.ts    在 Web Worker 計算分級（不支援時改在主執行緒）
 workers/risk.worker.ts   分級計算 worker
 lib/risk.ts              網格特徵與 K-means 分級（純函式）
 lib/data.ts              類別定義、CSV/JSON 解析與正規化
 lib/temples.ts           最近宮廟、導航連結、OpenStreetMap 宮廟搜尋
 lib/url-state.ts         網址參數 ↔ 畫面狀態
+lib/counties.ts          22 縣市清單與名稱正規化
+lib/county-stats.ts      縣市統計與縣市內的風險網格（與地圖預設畫面一致）
+lib/temple-schema.ts     宮廟資料欄位定義與驗證（格式錯誤會讓建置失敗）
+lib/server/              建置時讀取資料、產生分享圖
+public/sw.js             Service worker（離線快取）
 public/data/             incidents.json（事件）、temples.json（精選宮廟，座標為概略位置）
 tools/                   示範資料產生器、A1 轉換與自動下載、MapLibre worker 複製
 tests/                   單元測試（含新舊版分級結果比對）

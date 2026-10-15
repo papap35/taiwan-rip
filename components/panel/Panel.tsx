@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { TYPES, TYPE_KEYS, type IncidentType } from '@/lib/data.ts';
 import { LEVELS, type RiskCell } from '@/lib/risk.ts';
 import { gmapLink } from '@/lib/temples.ts';
@@ -51,6 +52,12 @@ export default function Panel(p: Props) {
       }`}
     >
       <div className="mx-auto mt-1 mb-2.5 h-[5px] w-10 rounded-full bg-line md:hidden" aria-hidden="true" />
+
+      <nav aria-label="其他頁面" className="mb-2.5 flex flex-wrap gap-2 text-[13px] lg:hidden">
+        <Link className="rounded-full border border-line bg-surface px-3 py-1" href="/county">縣市統計</Link>
+        <Link className="rounded-full border border-line bg-surface px-3 py-1" href="/temples">宮廟／收驚</Link>
+        <Link className="rounded-full border border-line bg-surface px-3 py-1" href="/about/method">說明</Link>
+      </nav>
 
       {p.isDemo && (
         <Card className="border-notice-line bg-notice text-[13px]">
