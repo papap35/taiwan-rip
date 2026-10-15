@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import SiteNav from '@/components/SiteNav';
+import { Wordmark } from '@/components/Logo';
 
 // 內容頁（縣市、宮廟、說明）共用版型：可捲動，頂部選單，底部求助資訊
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -7,7 +8,9 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-dvh">
       <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2">
-          <Link href="/" className="text-base font-bold tracking-wide md:text-lg">台灣事件風險地圖</Link>
+          <Link href="/" aria-label="台灣事件風險地圖（回地圖）">
+            <Wordmark />
+          </Link>
           <SiteNav className="-mx-2 overflow-x-auto" />
         </div>
       </header>

@@ -36,7 +36,7 @@ npm run build && npm run e2e   # 端對端測試（Playwright，桌機＋手機�
 其他指令：
 
 - `npm run og-font`：分享圖用的中文字型只含用得到的字（`lib/og-text.ts`），改了分享圖文字或縣市名稱後要重跑（需連網），`npm test` 會檢查有沒有缺字。
-- `npm run icons`：重新產生網站與 PWA 圖示。
+- `npm run icons`：由 `public/brand/app-icon.svg` 重新產生 PWA 與 Apple 圖示 PNG。Logo 原始檔在 `public/brand/`（`logo-mark.svg` 標誌、`app-icon.svg` App 圖示），瀏覽器分頁圖示是 `app/icon.svg`，頁面上的標誌是 `components/Logo.tsx`；改 logo 時這幾個要一起改。
 
 正式網址：分享圖、sitemap 的絕對網址預設使用 Vercel 的正式網域；之後若綁自訂網域，在 Vercel 設定環境變數 `NEXT_PUBLIC_SITE_URL`（例如 `https://example.tw`）。
 

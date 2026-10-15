@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <!-- 滿版紅底：手機系統會自行裁成圓角或圓形（maskable），燈籠在中央 67% 安全區內 -->
+  <rect width="180" height="180" fill="#c0392b"/>
+  <g transform="translate(30 30)">
+    <rect x="45" y="18" width="30" height="7" rx="3.5" fill="#f2c14e"/>
+    <ellipse cx="60" cy="52" rx="30" ry="26" fill="#ffffff"/>
+    <path d="M36 43 H84 M31 52 H89 M36 61 H84" stroke="#c0392b" stroke-opacity="0.35" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+    <rect x="45" y="79" width="30" height="7" rx="3.5" fill="#f2c14e"/>
+    <rect x="58" y="86" width="4" height="12" rx="2" fill="#f2c14e"/>
+  </g>
+</svg>
