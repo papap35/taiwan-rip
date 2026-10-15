@@ -1,25 +1,8 @@
-import { test as base, expect, type Page } from '@playwright/test';
-import { fileURLToPath } from 'node:url';
-
-const BLANK_STYLE = fileURLToPath(new URL('./fixtures/blank-style.json', import.meta.url));
-
-// 每個測試：底圖換成本機空白樣式（不依賴外部圖磚），並收集主控台錯誤
-const test = base.extend<{ errors: string[] }>({
-  errors: async ({ page }, use) => {
-    const errors: string[] = [];
-    await page.route('https://tiles.openfreemap.org/styles/**', (r) => r.fulfill({ path: BLANK_STYLE }));
-    await page.route('https://tiles.openfreemap.org/fonts/**', (r) => r.fulfill({ status: 200, body: '' }));
-    page.on('pageerror', (e) => errors.push(e.message));
-    page.on('console', (m) => {
-      if (m.type() === 'error') errors.push(m.text());
-    });
-    await use(errors);
-  },
-});
+import { test, expect, isMobile } from './fixtures';
+import type { Page } from '@playwright/test';
 
 const rangeLabel = (p: Page) => p.getByTestId('range-label');
 const countLabel = (p: Page) => p.getByTestId('count-label');
-const isMobile = (p: Page) => (p.viewportSize()?.width ?? 1000) < 768;
 
 async function openPanelIfMobile(page: Page) {
   if (isMobile(page)) await page.getByRole('button', { name: '開啟設定面板' }).click();

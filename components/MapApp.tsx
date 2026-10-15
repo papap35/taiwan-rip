@@ -9,6 +9,7 @@ import { DEFAULT_WINDOW, parseUrlState, serializeUrlState } from '@/lib/url-stat
 import { useRiskCells } from '@/hooks/useRiskCells.ts';
 import Panel, { type Layers } from './panel/Panel';
 import Timeline from './timeline/Timeline';
+import SiteNav from './SiteNav';
 import type { MapViewHandle } from './map/MapView';
 
 // 地圖只能在瀏覽器執行
@@ -196,9 +197,12 @@ export default function MapApp() {
   }
 
   return (
-    <div className="grid h-dvh grid-cols-1 grid-rows-[48px_1fr] md:grid-cols-[340px_1fr] md:grid-rows-[52px_1fr]">
+    <div className="grid h-dvh grid-cols-1 overflow-hidden grid-rows-[48px_1fr] md:grid-cols-[340px_1fr] md:grid-rows-[52px_1fr]">
       <header className="z-40 col-span-full flex items-center justify-between gap-2 border-b border-line bg-surface px-4">
-        <h1 className="text-base font-bold tracking-wide md:text-lg">台灣事件風險地圖</h1>
+        <div className="flex min-w-0 items-center gap-4">
+          <h1 className="text-base font-bold tracking-wide whitespace-nowrap md:text-lg">台灣事件風險地圖</h1>
+          <SiteNav className="hidden lg:flex" />
+        </div>
         <div className="flex gap-2">
           <button type="button" onClick={share} className="h-[38px] rounded-lg border border-line bg-surface px-3 text-sm text-ink">
             分享

@@ -3,6 +3,8 @@
 import { haversineKm } from './risk.ts';
 
 export interface Temple {
+  /** 精選宮廟才有（對應 /temples/[id]） */
+  id?: string;
   name: string;
   lat: number;
   lng: number;
@@ -17,7 +19,7 @@ export interface Temple {
 export const gmapLink = (t: { lat: number; lng: number }) =>
   `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}`;
 
-export function nearestTemples(pt: { lat: number; lng: number }, temples: Temple[], n = 3) {
+export function nearestTemples<T extends { lat: number; lng: number; shoujing?: boolean }>(pt: { lat: number; lng: number }, temples: T[], n = 3) {
   return temples
     .map((t) => ({ ...t, km: haversineKm(pt, t) }))
     // 精選收驚宮廟優先（距離打 7 折）

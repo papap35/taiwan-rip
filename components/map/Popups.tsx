@@ -91,6 +91,12 @@ export function TemplePopup({ temple: t }: { temple: Temple }) {
       )}
       {t.note && <div>{t.note}</div>}
       <a href={gmapLink(t)} target="_blank" rel="noopener">導航前往</a>
+      {t.id && (
+        <>
+          {'・'}
+          <a href={`/temples/${t.id}`}>宮廟資訊</a>
+        </>
+      )}
     </div>
   );
 }

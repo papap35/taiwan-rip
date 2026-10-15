@@ -11,6 +11,8 @@ export default defineConfig({
     // 無 GPU 環境用軟體 WebGL 繪製地圖
     launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
     trace: 'retain-on-failure',
+    // service worker 會攔截底圖請求，讓測試的替換失效；離線測試會個別打開
+    serviceWorkers: 'block',
   },
   projects: [
     { name: 'desktop', use: { browserName: 'chromium', viewport: { width: 1280, height: 800 } } },
