@@ -1,4 +1,4 @@
-// 從政府資料開放平臺自動下載 A1 交通事故資料並更新 data/incidents.json。
+// 從政府資料開放平臺自動下載 A1 交通事故資料並更新 public/data/incidents.json。
 // GitHub Actions 每週執行（.github/workflows/update-a1.yml），也可在本機手動跑：
 //
 //   node tools/fetch-a1.mjs                         # 預設資料集 12818（即時 A1）
@@ -8,7 +8,7 @@
 // 選項：
 //   --datasets <id,...>  data.gov.tw 資料集編號，會自動查出目前的 CSV 下載網址
 //   --url <網址>          直接下載的 CSV（可重複）；也可用環境變數 A1_URLS（逗號或換行分隔）
-//   --out <檔案>          輸出檔（預設 data/incidents.json）
+//   --out <檔案>          輸出檔（預設 public/data/incidents.json）
 //   --keep-years <n>     只保留最新資料往前 n 年（預設 3，0 = 全部保留）
 //   --dry-run            只顯示結果，不寫檔
 //
@@ -17,7 +17,7 @@
 
 import { writeFile, appendFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { parseCSV } from '../js/data.js';
+import { parseCSV } from '../lib/data.ts';
 import { convertRows, decode, readExisting, buildOutput } from './convert-a1.mjs';
 
 const API_BASE = process.env.A1_API_BASE || 'https://data.gov.tw/api/v2/rest/dataset/';
@@ -101,7 +101,7 @@ export function applyRetention(incidents, keepYears) {
   return incidents.filter((d) => d.date >= cutoff);
 }
 
-export async function run({ datasets = ['12818'], urls = [], out = 'data/incidents.json', keepYears = 3, dryRun = false, log = console.error }) {
+export async function run({ datasets = ['12818'], urls = [], out = 'public/data/incidents.json', keepYears = 3, dryRun = false, log = console.error }) {
   const sources = [...urls];
   if (!sources.length) {
     for (const id of datasets) {
@@ -145,7 +145,7 @@ function parseArgs(argv) {
     else if (a === '--keep-years') opts.keepYears = +argv[++i];
     else if (a === '--dry-run') opts.dryRun = true;
     else if (a === '-h' || a === '--help') {
-      console.log('用法：node tools/fetch-a1.mjs [--datasets 12818,...] [--url <csv>]... [--out data/incidents.json] [--keep-years 3] [--dry-run]');
+      console.log('用法：node tools/fetch-a1.mjs [--datasets 12818,...] [--url <csv>]... [--out public/data/incidents.json] [--keep-years 3] [--dry-run]');
       process.exit(0);
     }
     else throw new Error(`未知的參數：${a}`);

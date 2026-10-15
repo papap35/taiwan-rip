@@ -3,14 +3,36 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "python3 -m http.server 8000",
-    "build": "node tools/build.mjs",
+    "predev": "node tools/copy-maplibre-worker.mjs",
+    "dev": "next dev",
+    "prebuild": "node tools/copy-maplibre-worker.mjs",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
     "test": "node --test",
-    "demo-data": "node tools/generate-demo-data.mjs > data/incidents.json",
+    "e2e": "playwright test",
+    "demo-data": "node tools/generate-demo-data.mjs > public/data/incidents.json",
     "convert:a1": "node tools/convert-a1.mjs",
     "update:a1": "node tools/fetch-a1.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "maplibre-gl": "6.11.2",
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-map-gl": "8.1.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/geojson": "7946.0.16",
+    "@types/node": "22.20.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
   }
 }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { parseCSV } from '../js/data.js';
+import { parseCSV } from '../lib/data.ts';
 import { convertRows, decode, parseDateTime, parseCasualties, guessCounty } from '../tools/convert-a1.mjs';
 
 const load = async (name) => parseCSV(decode(await readFile(new URL(`./fixtures/${name}`, import.meta.url))));

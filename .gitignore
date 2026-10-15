@@ -1,3 +1,8 @@
 node_modules/
-dist/
+.next/
+next-env.d.ts
+*.tsbuildinfo
 .vercel/
+test-results/
+playwright-report/
+public/maplibre/
