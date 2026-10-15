@@ -32,7 +32,7 @@
 | **M0 遷移** | Next.js 改寫，功能與現在一致；網址可分享狀態 | 3–4 天 | 無（資料仍是靜態 JSON） |
 | **M1 內容與分享** | 縣市頁、宮廟目錄、方法／資料來源頁、SEO、分享圖、PWA | 4–5 天 | 無 |
 | **M2 AI 區域解說** | 點網格或縣市 →「AI 解說」白話說明 | 2–3 天 | Claude API、資料庫（快取） |
-| **M3 資料自動化與後台** | 每週自動匯入 A1、事件 API、管理後台 | 4–5 天 | 資料庫、Vercel Cron |
+| **M3 資料自動化與後台** | 每日自動匯入 A1、事件 API、管理後台 | 4–5 天 | 資料庫、Vercel Cron |
 | **M4 會員與社群** | 登入、收藏地點、風險變化通知、宮廟資訊更正回報 | 5–7 天 | 資料庫 + 登入、Email 寄送 |
 | 待規劃 | 路線風險、英文版、事件回報 | — | 路線規劃服務等 |
 
@@ -78,7 +78,7 @@ app/
   api/
     incidents/route.ts       事件查詢（M3）
     explain/route.ts         AI 解說（M2）
-    cron/import-a1/route.ts  每週匯入（M3）
+    cron/import-a1/route.ts  每日匯入（M3）
     reports/route.ts         宮廟資訊更正回報（M4）
 components/
   map/                       MapView、IncidentLayer、RiskGridLayer、TempleLayer
@@ -173,7 +173,7 @@ supabase/migrations/         資料庫 schema（M2 起）
 
 ### M3 — 資料自動化與後台
 
-1. **每週自動匯入**：Vercel Cron 每週一 18:00（台灣時間）呼叫 `/api/cron/import-a1`
+1. **每日自動匯入**：Vercel Cron 每天 09:17（台灣時間）呼叫 `/api/cron/import-a1`
    - 下載即時 A1 CSV → 用 `lib/a1/convert.ts` 轉換 → 寫入資料庫（依 id 去重）
    - 記錄匯入結果（新增幾筆、略過幾筆、錯誤）；失敗時寄信通知管理員
    - 成功後讓縣市頁重新產生
@@ -219,7 +219,7 @@ supabase/migrations/         資料庫 schema（M2 起）
 
 | 資料 | 精細度 | 自動化 | 狀態 |
 | --- | --- | --- | --- |
-| 即時 A1 交通事故（data.gov.tw 12818） | 經緯度 | ✅ | **已完成**：`update-a1.yml` 每週自動更新（M3 前以 GitHub Actions 進行，M3 改為 Vercel Cron + 資料庫） |
+| 即時 A1 交通事故（data.gov.tw 12818） | 經緯度 | ✅ | **已完成**：`update-a1.yml` 每日自動更新（M3 前以 GitHub Actions 進行，M3 改為 Vercel Cron + 資料庫） |
 | 年度傷亡交通事故（如 177136） | 經緯度 | ✅ | 手動執行時加入資料集編號補歷史；只取 A1 |
 | 警政署犯罪發生資料（8 案類，每季） | 只有地點文字 | ⚠️ 需轉座標 | 待做：以內政部村里界線的中心點定位 |
 | 犯罪週統計（13166） | 縣市 | ✅ | 待做：用於縣市頁趨勢圖 |

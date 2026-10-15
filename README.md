@@ -78,7 +78,7 @@ CSV 欄位：
 # 轉換一個或多個檔案（也可以直接給下載網址），輸出到 data/incidents.json
 node tools/convert-a1.mjs ~/Downloads/112年度A1交通事故資料.csv ~/Downloads/113年度A1交通事故資料.csv
 
-# 之後每週追加最新的即時 A1 資料，保留既有紀錄並自動去重
+# 之後定期追加最新的即時 A1 資料，保留既有紀錄並自動去重
 node tools/convert-a1.mjs ~/Downloads/A1.csv --append
 
 # 只保留某日期之後
@@ -102,7 +102,7 @@ node tools/convert-a1.mjs A1.csv --since 2024-01-01
 
 1. **先手動試跑**：Actions → **Update A1 data** → Run workflow（可勾「只試跑」先看結果，摘要會顯示新增幾筆）。
 2. **補歷史資料**：手動執行時在「資料集編號」加上年度資料集，例如 `12818,177136`（年度檔混有 A2，腳本只會取 A1）。
-3. **開啟每週排程**：Settings → Secrets and variables → Actions → Variables 新增 `A1_SCHEDULE_ENABLED` = `true`（每週一 17:17 台灣時間）。
+3. **開啟每日排程**：Settings → Secrets and variables → Actions → Variables 新增 `A1_SCHEDULE_ENABLED` = `true`（每天 09:17 台灣時間；資料沒變動就不會 commit 或部署）。
 4. **查不到下載網址時**：新增 Variable `A1_URLS`，填 CSV 下載網址（逗號分隔），會略過自動查詢。
 
 安全機制：下載失敗、下載到網頁、轉出 0 筆、或超過一半資料列無法解析時，workflow 會失敗且**不會覆蓋**現有資料，GitHub 會寄失敗通知。新資料與既有資料依 id 合併去重，預設保留最近 3 年。第一次成功執行會移除示範資料。
@@ -130,7 +130,7 @@ tools/build.mjs          建置：複製靜態檔到 dist/
 tests/                   轉換腳本與網站資料檢查（npm test）
 vercel.json              Vercel 建置設定與安全標頭
 .github/workflows/ci-cd.yml  CI/CD：測試 → 部署預覽／正式站
-.github/workflows/update-a1.yml  每週自動更新 A1 資料
+.github/workflows/update-a1.yml  每日自動更新 A1 資料
 ```
 
 ## 分級方法與限制

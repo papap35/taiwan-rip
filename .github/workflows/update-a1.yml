@@ -1,8 +1,8 @@
 # 自動更新 A1 交通事故資料：下載 → 轉換 → 測試 → commit 到 main → 觸發部署。
 #
 # 手動執行：Actions → Update A1 data → Run workflow
-# 每週排程：預設關閉。確認手動執行結果沒問題後，到 Settings → Secrets and variables →
-#   Actions → Variables 新增 A1_SCHEDULE_ENABLED = true 即開啟（每週一 17:17 台灣時間）。
+# 每日排程：預設關閉。確認手動執行結果沒問題後，到 Settings → Secrets and variables →
+#   Actions → Variables 新增 A1_SCHEDULE_ENABLED = true 即開啟（每天 09:17 台灣時間；資料沒變動就不會 commit 或部署）。
 # 下載網址：預設透過 data.gov.tw 自動查詢；若平臺改版查不到，可新增 Variable
 #   A1_URLS（CSV 網址，逗號分隔）直接指定。
 
@@ -22,7 +22,7 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: '17 9 * * 1' # UTC 週一 09:17 = 台灣 17:17
+    - cron: '17 1 * * *' # UTC 01:17 = 台灣 09:17，每天
 
 permissions:
   contents: write
