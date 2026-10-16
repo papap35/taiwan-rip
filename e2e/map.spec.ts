@@ -72,6 +72,13 @@ test('clicking an incident and a grid cell opens their popups', async ({ page, r
   await page.locator('.maplibregl-popup-close-button').click();
   await page.mouse.click(c.x + 80, c.y - 120);
   await expect(popup).toContainText('AI 危險分級');
+
+  // AI 解說（e2e 伺服器為測試模式，不呼叫 API）
+  await popup.getByRole('button', { name: 'AI 解說' }).click();
+  const result = popup.getByTestId('ai-explain-result');
+  await expect(result).toContainText('AI 生成，僅供參考');
+  await expect(result).toContainText('（測試模式）');
+  await expect(result).toContainText('示範資料');
   expect(errors).toEqual([]);
 });
 

@@ -7,11 +7,13 @@ import { LEVELS } from '@/lib/risk.ts';
 import { nearestTemples, searchOsmTemples, type Temple } from '@/lib/temples.ts';
 import { DEFAULT_WINDOW, parseUrlState, serializeUrlState } from '@/lib/url-state.ts';
 import { useRiskCells } from '@/hooks/useRiskCells.ts';
+import { effectiveWindow, filterView } from '@/lib/view.ts';
 import Panel, { type Layers } from './panel/Panel';
 import Timeline from './timeline/Timeline';
 import SiteNav from './SiteNav';
 import { Wordmark } from './Logo';
 import type { MapViewHandle } from './map/MapView';
+import type { ExplainView } from './map/Popups';
 
 // 地圖只能在瀏覽器執行
 const MapView = dynamic(() => import('./map/MapView'), {
@@ -86,15 +88,17 @@ export default function MapApp() {
   }, []);
 
   // ── 篩選與分級 ─────────────────────────────────
-  const filtered = useMemo(() => {
-    const start = windowDays ? endT - (windowDays - 1) * DAY : -Infinity;
-    return data.list.filter((d) => d.t <= endT && d.t >= start && types.has(d.type));
-  }, [data.list, endT, windowDays, types]);
+  const filtered = useMemo(() => filterView(data.list, { endT, windowDays, types }), [data.list, endT, windowDays, types]);
 
   const typeTimes = useMemo(() => data.list.filter((d) => types.has(d.type)).map((d) => d.t), [data.list, types]);
-  const effectiveWindow = windowDays || Math.max(1, Math.round((endT - minT) / DAY) + 1);
-  const cells = useRiskCells(filtered, endT, effectiveWindow);
+  const cells = useRiskCells(filtered, endT, effectiveWindow(minT, endT, windowDays));
   const fatal = useMemo(() => filtered.filter((d) => d.severity >= 4).length, [filtered]);
+  // 只有網站提供的資料能請伺服器重算；自行匯入的資料不提供 AI 解說
+  const official = Boolean(defaults && data.list.length === defaults.list.length && data.list.at(-1)?.id === defaults.list.at(-1)?.id);
+  const explainView = useMemo<ExplainView>(
+    () => (official ? { end: fmt(endT), window: windowDays, types: TYPE_KEYS.filter((t) => types.has(t)) } : null),
+    [official, endT, windowDays, types],
+  );
   const allTemples = useMemo(() => [...temples, ...osmTemples], [temples, osmTemples]);
 
   // ── 網址同步（不新增瀏覽紀錄） ─────────────────────
@@ -254,6 +258,7 @@ export default function MapApp() {
             apiRef={mapApi}
             incidents={filtered}
             cells={cells}
+            explainView={explainView}
             temples={allTemples}
             layers={layers}
             me={me}

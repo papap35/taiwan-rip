@@ -247,7 +247,7 @@ async function main(argv) {
   console.error(`已寫入 ${out}：共 ${incidents.length} 起（${meta.range[0]} ～ ${meta.range[1]}）`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main(process.argv.slice(2)).catch((err) => {
     console.error(err.message);
     process.exit(1);

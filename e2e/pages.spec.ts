@@ -33,6 +33,31 @@ test('county page shows stats, an interactive chart, risk areas and temples', as
   expect(errors).toEqual([]);
 });
 
+test('county page AI explanation is labelled and shows the disabled state', async ({ page, errors }) => {
+  await page.goto('/county/taipei');
+  await page.getByRole('button', { name: 'AI 解說', exact: true }).click();
+  const result = page.getByTestId('ai-explain-result');
+  await expect(result).toContainText('AI 生成，僅供參考');
+  await expect(result).toContainText('臺北市');
+  await expect(result).toContainText('範圍：臺北市');
+  expect(await noHorizontalScroll(page)).toBe(true);
+
+  // 未設定金鑰時：按鈕停用並標示尚未啟用
+  await page.route('**/api/explain', (r) => r.fulfill({ json: { enabled: false } }));
+  await page.goto('/county/hualien');
+  await expect(page.getByRole('button', { name: 'AI 解說（尚未啟用）' })).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
+test('explain API validates requests', async ({ page, request }) => {
+  test.skip(isMobile(page), 'server responses only need one run');
+  expect((await request.post('/api/explain', { data: { kind: 'county', slug: 'nowhere' } })).status()).toBe(400);
+  expect((await request.post('/api/explain', { data: 'not json' })).status()).toBe(400);
+  const r = await request.post('/api/explain', { data: { kind: 'county', slug: 'yilan' } });
+  expect(r.status()).toBe(200);
+  expect((await r.json()).explanation.advice.length).toBeGreaterThan(0);
+});
+
 test('temple directory filters and detail page shows unconfirmed fields honestly', async ({ page, errors }) => {
   await page.goto('/temples');
   const cards = page.locator('main ul a[href^="/temples/"]');
