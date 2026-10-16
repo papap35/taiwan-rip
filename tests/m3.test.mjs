@@ -3,6 +3,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { MemoryRepo } from '../lib/server/repo/memory.ts';
 import { FileRepo } from '../lib/server/repo/files.ts';
 import { ImportBusyError, ReadOnlyError } from '../lib/server/repo/types.ts';
@@ -16,6 +17,8 @@ let server;
 let base;
 let csvHits = 0;
 const fixture = await readFile(new URL('./fixtures/a1-realtime-big5.csv', import.meta.url));
+// 固定的示範資料（不依賴 public/data 目前是示範還是真實資料）
+const DATA = fileURLToPath(new URL('./fixtures/data/', import.meta.url));
 
 before(async () => {
   server = createServer((req, res) => {
@@ -87,7 +90,7 @@ test('a second import is refused while one is running, until it is stale', async
 });
 
 test('file repo is read-only and filters like the database', async () => {
-  const repo = new FileRepo();
+  const repo = new FileRepo(DATA);
   assert.equal(repo.writable, false);
   assert.throws(() => repo.addIncidents([]), ReadOnlyError);
   const all = await repo.incidents();
@@ -105,11 +108,11 @@ test('file repo is read-only and filters like the database', async () => {
 test('seed skips demo incidents unless asked', async () => {
   const logs = [];
   const repo = emptyRepo();
-  const r = await seed(repo, { log: (m) => logs.push(m) });
+  const r = await seed(repo, { dir: DATA, log: (m) => logs.push(m) });
   assert.equal(r.added, 0);
   assert.ok(r.temples > 10);
   assert.match(logs.join(), /示範資料，未寫入/);
-  assert.ok((await seed(emptyRepo(), { includeDemo: true, log: () => {} })).added > 100);
+  assert.ok((await seed(emptyRepo(), { includeDemo: true, dir: DATA, log: () => {} })).added > 100);
 });
 
 test('geojson round trip keeps every field', () => {

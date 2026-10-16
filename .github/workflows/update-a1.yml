@@ -45,6 +45,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22 # 需 22.18 以上：tools 直接 import lib/*.ts
+          cache: npm
+
+      # 下載與轉換不需要套件，但 npm test 的部分測試會用到（zod、supabase-js、PGlite）
+      - name: Install dependencies
+        run: npm ci
 
       - name: Download and convert
         id: fetch

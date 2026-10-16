@@ -13,11 +13,11 @@ import { getRepo } from '../lib/server/repo/index.ts';
 import { readIncidentFile, readTempleFile } from '../lib/server/repo/files.ts';
 import { importA1 } from '../lib/server/import-a1.ts';
 
-export async function seed(repo, { includeDemo = false, log = console.error } = {}) {
-  const temples = await readTempleFile();
+export async function seed(repo, { includeDemo = false, dir, log = console.error } = {}) {
+  const temples = await readTempleFile(dir);
   for (const t of temples) await repo.saveTemple(t);
   log(`宮廟：寫入 ${temples.length} 間`);
-  const { records } = await readIncidentFile();
+  const { records } = await readIncidentFile(dir);
   const picked = includeDemo ? records : records.filter((r) => r.source !== 'demo');
   if (records.length && !picked.length) log('public/data/incidents.json 是示範資料，未寫入；請執行 import 匯入真實資料');
   const added = picked.length ? await repo.addIncidents(picked) : 0;

@@ -28,7 +28,7 @@ npm install
 npm run dev          # http://localhost:3000
 npm run typecheck    # TypeScript 型別檢查
 npm test             # 單元測試（node:test）
-npm run build && npm run e2e   # 端對端測試（Playwright，桌機＋手機寬度）
+npm run e2e          # 端對端測試（Playwright，桌機＋手機寬度；用 tests/fixtures/data 另外建置）
 ```
 
 第一次跑端對端測試前執行 `npx playwright install chromium`。測試會把底圖換成本機空白樣式，不需要連外。
