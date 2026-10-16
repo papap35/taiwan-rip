@@ -22,6 +22,8 @@ export default defineConfig({
     command: 'npx next start -p 3123',
     url: 'http://localhost:3123',
     reuseExistingServer: !process.env.CI,
+    // AI 解說用測試模式（不呼叫 Claude API）
+    env: { AI_EXPLAIN_MOCK: '1', AI_PER_IP_HOURLY_LIMIT: '1000' },
     timeout: 60_000,
   },
 });

@@ -71,6 +71,27 @@ npm run build && npm run e2e   # 端對端測試（Playwright，桌機＋手機�
 
 本機預覽正式建置：`npm run build && npm start`。
 
+## AI 區域解說（選用）
+
+點地圖上的網格或縣市頁的「AI 解說」，伺服器會依目前的篩選條件重新計算彙總數字，交給 Claude 寫成白話說明，並標示「AI 生成，僅供參考」。只送彙總數字（不含個別事件、地址），回覆若出現輸入沒有的數字或疑似門牌，就改顯示統計摘要。
+
+在 Vercel 專案的 Settings → Environment Variables 設定（**不要**加 `NEXT_PUBLIC_` 前綴，金鑰只留在伺服器端）：
+
+| 變數 | 必填 | 說明 |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | 是 | 沒設定時按鈕顯示「尚未啟用」，網站其他功能不受影響 |
+| `SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY` | 建議 | 快取與用量計數跨伺服器實例共用。沒設定時改用單一實例的記憶體，重啟就清空，上限也只對單一實例有效 |
+| `AI_DAILY_LIMIT` | 否 | 全站每日呼叫上限，預設 2000（約 US$28） |
+| `AI_PER_IP_HOURLY_LIMIT` | 否 | 每個 IP 每小時上限，預設 20（IP 只存雜湊） |
+| `AI_EXPLAIN_MODEL` | 否 | 預設 `claude-opus-5-5`（effort low）；可改 `claude-haiku-5-5` 降低成本 |
+| `AI_IP_SALT` | 否 | IP 雜湊用的鹽，預設沿用 service role key |
+
+使用 Supabase 時，先在 SQL Editor 執行 `supabase/migrations/0001_ai_explain.sql`（建立快取表、計數表與原子計數函式，開啟 RLS 且不開放任何公開存取）。
+
+快取鍵是「送給模型的統計數字＋提示詞版本＋模型」，資料每天更新後數字有變就會自動重新產生；快取命中不計入用量。
+
+驗收：`ANTHROPIC_API_KEY=... npm run eval:explain -- --out report.md` 會對 20 個固定網格／縣市實際呼叫一次（約 US$0.3），檢查數字、地址與示範資料提醒，並輸出全文供人工檢視。端對端測試用 `AI_EXPLAIN_MOCK=1` 的測試模式，不呼叫 API；正式環境不要設定這個變數。
+
 ## 匯入真實資料
 
 在面板「匯入資料」上傳 CSV 或 JSON（也支援 GeoJSON Point），資料只在瀏覽器內處理。

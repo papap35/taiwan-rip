@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AiExplain from '@/components/AiExplain';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { COUNTIES, countyBySlug } from '@/lib/counties.ts';
@@ -54,6 +55,10 @@ export default async function CountyPage({ params }: { params: Promise<{ slug: s
           <StatTile key={w.days} label={`近 ${w.days} 天事件`} value={w.count} sub={`死亡／重大 ${w.fatal} 起`} prev={w.prevCount} />
         ))}
       </div>
+
+      <Section title="AI 解說">
+        <AiExplain request={{ kind: 'county', slug: county.slug }} />
+      </Section>
 
       <Section title="每月趨勢">
         <MonthlyChart data={s.monthly} title={`${county.name}每月事件數（近 24 個月）`} />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useImperativeHandle, useMemo, useRef, useState, type RefObject } from 'react';
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import Map, {
   Layer,
   Marker,
@@ -16,7 +16,7 @@ import type { FeatureCollection, Point, Polygon } from 'geojson';
 import { TYPES, type Incident } from '@/lib/data.ts';
 import { LEVELS, type RiskCell } from '@/lib/risk.ts';
 import type { Temple } from '@/lib/temples.ts';
-import { IncidentPopup, RiskPopup, TemplePopup } from './Popups';
+import { IncidentPopup, RiskPopup, TemplePopup, type ExplainView } from './Popups';
 
 export const MAP_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 
@@ -35,6 +35,7 @@ interface Props {
   apiRef: RefObject<MapViewHandle | null>;
   incidents: Incident[];
   cells: RiskCell[];
+  explainView: ExplainView;
   temples: Temple[];
   layers: { incidents: boolean; risk: boolean; temples: boolean };
   me: { lat: number; lng: number } | null;
@@ -45,14 +46,14 @@ interface Props {
 
 type PopupState =
   | { kind: 'incident'; incident: Incident }
-  | { kind: 'risk'; cell: RiskCell }
+  | { kind: 'risk'; cell: RiskCell; at: { lat: number; lng: number } }
   | { kind: 'temple'; temple: Temple }
   | null;
 
 const typeColor = ['match', ['get', 'type'], ...Object.entries(TYPES).flatMap(([k, v]) => [k, v.color]), '#9e9e9e'];
 const levelColor = ['match', ['get', 'level'], ...LEVELS.flatMap((l, i) => [i, l.color]), '#9e9e9e'];
 
-export default function MapView({ apiRef, incidents, cells, temples, layers, me, initialView, onViewChange, onBackgroundClick }: Props) {
+export default function MapView({ apiRef, incidents, cells, explainView, temples, layers, me, initialView, onViewChange, onBackgroundClick }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [popup, setPopup] = useState<PopupState>(null);
   const [zoom, setZoom] = useState(initialView?.zoom ?? 7);
@@ -117,7 +118,8 @@ export default function MapView({ apiRef, incidents, cells, temples, layers, me,
       if (incident) setPopup({ kind: 'incident', incident });
     } else if (f.layer.id === 'risk-fill') {
       const cell = byKey.get(p.key);
-      if (cell) setPopup({ kind: 'risk', cell });
+      // 開在點擊的位置；網格邊緣在放大時可能遠在畫面外
+      if (cell) setPopup({ kind: 'risk', cell, at: { lat: e.lngLat.lat, lng: e.lngLat.lng } });
     }
   }
 
@@ -129,7 +131,7 @@ export default function MapView({ apiRef, incidents, cells, temples, layers, me,
 
   const popupAt =
     popup?.kind === 'incident' ? { lat: popup.incident.lat, lng: popup.incident.lng }
-    : popup?.kind === 'risk' ? { lat: popup.cell.north, lng: (popup.cell.west + popup.cell.east) / 2 }
+    : popup?.kind === 'risk' ? popup.at
     : popup?.kind === 'temple' ? { lat: popup.temple.lat, lng: popup.temple.lng }
     : null;
 
@@ -241,12 +243,51 @@ export default function MapView({ apiRef, incidents, cells, temples, layers, me,
       )}
 
       {popup && popupAt && (
-        <Popup latitude={popupAt.lat} longitude={popupAt.lng} closeOnClick={false} onClose={() => setPopup(null)} maxWidth="300px">
-          {popup.kind === 'incident' && <IncidentPopup incident={popup.incident} temples={temples} />}
-          {popup.kind === 'risk' && <RiskPopup cell={popup.cell} temples={temples} />}
-          {popup.kind === 'temple' && <TemplePopup temple={popup.temple} />}
+        <Popup latitude={popupAt.lat} longitude={popupAt.lng} anchor="bottom" closeOnClick={false} onClose={() => setPopup(null)} maxWidth="300px">
+          <KeepInView mapRef={mapRef}>
+            {popup.kind === 'incident' && <IncidentPopup incident={popup.incident} temples={temples} />}
+            {popup.kind === 'risk' && <RiskPopup cell={popup.cell} temples={temples} explainView={explainView} />}
+            {popup.kind === 'temple' && <TemplePopup temple={popup.temple} />}
+          </KeepInView>
         </Popup>
       )}
     </Map>
   );
+}
+
+/** 彈出視窗打開或內容變高（例如展開 AI 解說）時，平移地圖讓整個視窗留在畫面內 */
+function KeepInView({ mapRef, children }: { mapRef: RefObject<MapRef | null>; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const content = ref.current;
+    const map = mapRef.current;
+    if (!content || !map) return;
+    const fit = () => {
+      // react-map-gl 在子元件 effect 之後才把內容掛進彈出視窗，所以每次都重新找外框
+      const el = content.closest<HTMLElement>('.maplibregl-popup');
+      if (!el) return;
+      if (map.isMoving()) {
+        map.once('moveend', fit);
+        return;
+      }
+      const box = el.getBoundingClientRect();
+      const frame = map.getContainer().getBoundingClientRect();
+      const pad = 12;
+      const dx = box.left < frame.left + pad ? box.left - frame.left - pad : box.right > frame.right - pad ? box.right - frame.right + pad : 0;
+      const dy = box.top < frame.top + pad ? box.top - frame.top - pad : box.bottom > frame.bottom - pad ? box.bottom - frame.bottom + pad : 0;
+      if (dx || dy) map.panBy([dx, dy], { duration: 250 });
+    };
+    // 掛上去（尺寸從 0 變成實際大小）與之後內容變高時都會觸發
+    let frame = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fit);
+    });
+    ro.observe(content);
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
+  }, [mapRef]);
+  return <div ref={ref}>{children}</div>;
 }

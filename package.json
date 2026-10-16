@@ -15,17 +15,21 @@
     "convert:a1": "node tools/convert-a1.mjs",
     "update:a1": "node tools/fetch-a1.mjs",
     "og-font": "node tools/build-og-font.mjs",
-    "icons": "node tools/build-icons.mjs"
+    "icons": "node tools/build-icons.mjs",
+    "eval:explain": "node tools/eval-explain.mjs"
   },
   "engines": {
     "node": ">=22.18"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.131.0",
+    "@supabase/supabase-js": "2.117.2",
     "maplibre-gl": "6.11.2",
     "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-map-gl": "8.1.3"
+    "react-map-gl": "8.1.3",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

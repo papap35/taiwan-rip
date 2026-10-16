@@ -155,7 +155,7 @@ function parseArgs(argv) {
   return opts;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const summary = await run(parseArgs(process.argv.slice(2)));
     // 給 GitHub Actions 用：輸出新增筆數與摘要

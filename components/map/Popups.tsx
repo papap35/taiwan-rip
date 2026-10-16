@@ -1,6 +1,8 @@
 import { TYPES, type Incident } from '@/lib/data.ts';
 import { LEVELS, type RiskCell } from '@/lib/risk.ts';
 import { gmapLink, nearestTemples, type Temple } from '@/lib/temples.ts';
+import type { ExplainRequest } from '@/lib/explain/schema.ts';
+import AiExplain from '../AiExplain';
 
 const fmt = (t: number) => new Date(t).toISOString().slice(0, 10);
 
@@ -59,7 +61,10 @@ export function riskReasons(c: RiskCell): string[] {
   return reasons;
 }
 
-export function RiskPopup({ cell, temples }: { cell: RiskCell; temples: Temple[] }) {
+/** 目前地圖畫面的篩選條件，讓伺服器算出同一批數字；使用者自行匯入資料時為 null（不提供 AI 解說） */
+export type ExplainView = Omit<Extract<ExplainRequest, { kind: 'cell' }>, 'kind' | 'key'> | null;
+
+export function RiskPopup({ cell, temples, explainView }: { cell: RiskCell; temples: Temple[]; explainView: ExplainView }) {
   const lvl = LEVELS[cell.level];
   const center = { lat: (cell.south + cell.north) / 2, lng: (cell.west + cell.east) / 2 };
   return (
@@ -75,6 +80,7 @@ export function RiskPopup({ cell, temples }: { cell: RiskCell; temples: Temple[]
         {riskReasons(cell).map((r) => <li key={r}>{r}</li>)}
       </ul>
       <NearbyTemples at={center} temples={temples} />
+      {explainView && <AiExplain compact request={{ kind: 'cell', key: cell.key, ...explainView }} />}
     </div>
   );
 }
