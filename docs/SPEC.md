@@ -1,6 +1,6 @@
 # 台灣事件風險地圖 — Next.js 改版與功能規劃 Spec
 
-- 狀態：M0、M1、M2 已實作（見各里程碑驗收）；M3 之後為草稿
+- 狀態：M0–M3 已實作（見各里程碑驗收）；M4 之後為草稿
 - 日期：2026-10-15
 - 範圍：把現有純靜態網站改寫為 Next.js，並分階段加入新功能
 
@@ -198,8 +198,17 @@ supabase/migrations/         資料庫 schema（M2 起）
 
 **驗收**
 
-- [ ] 用 fixtures 模擬一次匯入：重複執行兩次，資料筆數不變
-- [ ] 非管理員存取 `/admin` 與管理 API 一律拒絕（含測試）
+- [x] 用 fixtures 模擬一次匯入：重複執行兩次，資料筆數不變（`tests/m3.test.mjs`；端對端測試也在後台按兩次「立即匯入」）
+- [x] 非管理員存取 `/admin` 與管理 API 一律拒絕（含測試）：未登入、偽造 cookie、跨站請求、錯誤的 cron 金鑰
+
+**實作說明**
+
+- 資料來源可切換：有 Supabase 就用資料庫，否則讀 `public/data`（唯讀，GitHub Actions 照舊每日更新檔案）。測試用 `DATA_BACKEND=memory`。
+- 頁面仍是靜態產生；匯入有新資料或後台編輯宮廟時才讓全站重新產生（不定時重新產生）。
+- 管理員登入：先用單一密碼（`ADMIN_PASSWORD`）＋簽章 cookie（12 小時、SameSite=Strict、登入每 IP 15 分鐘 10 次）；M4 有會員後可改用 Supabase Auth 的角色。
+- 失敗通知：設定 `RESEND_API_KEY`、`ADMIN_EMAIL` 時寄信；一律記錄在後台匯入紀錄。
+- 資料庫座標先用 lat/lng 欄位（`incidents_query` 函式處理範圍查詢），需要距離查詢時再加 PostGIS。
+- 事件回報審核佇列留待 M4。
 
 ### M4 — 會員與社群
 
@@ -230,7 +239,7 @@ supabase/migrations/         資料庫 schema（M2 起）
 
 | 資料 | 精細度 | 自動化 | 狀態 |
 | --- | --- | --- | --- |
-| 即時 A1 交通事故（data.gov.tw 12818） | 經緯度 | ✅ | **已完成**：`update-a1.yml` 每日自動更新（M3 前以 GitHub Actions 進行，M3 改為 Vercel Cron + 資料庫） |
+| 即時 A1 交通事故（data.gov.tw 12818） | 經緯度 | ✅ | **已完成**：有資料庫時由 Vercel Cron 每日匯入；沒有時由 `update-a1.yml` 每日更新檔案 |
 | 年度傷亡交通事故（如 177136） | 經緯度 | ✅ | 手動執行時加入資料集編號補歷史；只取 A1 |
 | 警政署犯罪發生資料（8 案類，每季） | 只有地點文字 | ⚠️ 需轉座標 | 待做：以內政部村里界線的中心點定位 |
 | 犯罪週統計（13166） | 縣市 | ✅ | 待做：用於縣市頁趨勢圖 |
@@ -242,7 +251,8 @@ supabase/migrations/         資料庫 schema（M2 起）
 ## 5. 資料模型（Supabase / Postgres + PostGIS）
 
 ```sql
--- 事件（M3 起；M0–M2 仍讀 data/incidents.json）
+-- 草稿；實際 schema 見 supabase/migrations/（座標先用 lat/lng 欄位，未用 PostGIS）
+-- 事件（M3 起；沒有資料庫時仍讀 data/incidents.json）
 create table incidents (
   id          text primary key,              -- 例：a1-20230105-073000-25.03321-121.54321
   occurred_on date not null,

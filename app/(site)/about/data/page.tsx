@@ -12,7 +12,7 @@ export default async function DataPage() {
   const [{ meta, list }, temples] = await Promise.all([loadIncidents(), loadTemples()]);
   const isDemo = meta.demo !== false;
   const range = list.length ? `${new Date(list[0].t).toISOString().slice(0, 10)} ～ ${new Date(list.at(-1)!.t).toISOString().slice(0, 10)}` : '—';
-  const sources: string[] = Array.isArray(meta.sources) ? meta.sources : meta.source ? [meta.source] : [];
+  const sources = meta.sources ?? (meta.source ? [meta.source] : []);
   return (
     <>
       <PageTitle title="資料來源" sub="網站上每一個數字從哪裡來、多久更新一次。" />
@@ -23,7 +23,7 @@ export default async function DataPage() {
           <dt className="text-muted">資料集</dt><dd>{meta.name ?? '—'}</dd>
           <dt className="text-muted">筆數</dt><dd>{list.length.toLocaleString('zh-TW')} 起</dd>
           <dt className="text-muted">期間</dt><dd>{range}</dd>
-          <dt className="text-muted">最後更新</dt><dd>{meta.updated ?? meta.converted ?? '—'}</dd>
+          <dt className="text-muted">最後更新</dt><dd>{meta.updated ?? '—'}</dd>
           {sources.length > 0 && (
             <>
               <dt className="text-muted">來源網址</dt>

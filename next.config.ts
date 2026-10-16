@@ -2,8 +2,8 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // AI 解說在伺服器端讀取事件與宮廟資料
-  outputFileTracingIncludes: { '/api/explain': ['./public/data/*.json'] },
+  // 沒有資料庫時，API 與重新產生的頁面在伺服器端讀取 public/data
+  outputFileTracingIncludes: { '/**': ['./public/data/*.json'] },
 };
 
 export default nextConfig;

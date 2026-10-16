@@ -86,11 +86,42 @@ npm run build && npm run e2e   # 端對端測試（Playwright，桌機＋手機�
 | `AI_EXPLAIN_MODEL` | 否 | 預設 `claude-opus-5-5`（effort low）；可改 `claude-haiku-5-5` 降低成本 |
 | `AI_IP_SALT` | 否 | IP 雜湊用的鹽，預設沿用 service role key |
 
-使用 Supabase 時，先在 SQL Editor 執行 `supabase/migrations/0001_ai_explain.sql`（建立快取表、計數表與原子計數函式，開啟 RLS 且不開放任何公開存取）。
+使用 Supabase 時，先依下一節建立資料表（`0001_ai_explain.sql` 是 AI 快取與計數）。
 
 快取鍵是「送給模型的統計數字＋提示詞版本＋模型」，資料每天更新後數字有變就會自動重新產生；快取命中不計入用量。
 
 驗收：`ANTHROPIC_API_KEY=... npm run eval:explain -- --out report.md` 會對 20 個固定網格／縣市實際呼叫一次（約 US$0.3），檢查數字、地址與示範資料提醒，並輸出全文供人工檢視。端對端測試用 `AI_EXPLAIN_MOCK=1` 的測試模式，不呼叫 API；正式環境不要設定這個變數。
+
+## 資料庫、每日匯入與管理後台（選用）
+
+沒有設定資料庫時，網站讀 `public/data/*.json`，由 GitHub Actions 每天更新檔案（見下方「自動更新」）。接上 Supabase 後改成：
+
+- **每日自動匯入**：Vercel Cron 每天 09:17（台灣時間）呼叫 `/api/cron/import-a1`，下載即時 A1 → 轉換與格式檢查 → 依 id 去重寫入資料庫 → 有新資料才讓網站頁面重新產生。失敗時保留原資料、記錄在後台，並寄信通知（有設定時）。
+- **管理後台 `/admin`**：看匯入紀錄、手動「立即匯入」、新增／編輯宮廟（含「最後確認日期」）。
+- **事件 API**：`GET /api/incidents?from=&to=&bbox=south,west,north,east&types=&limit=` 回傳 GeoJSON，CDN 快取 10 分鐘，單次最多 20,000 筆（超過時回傳最新的，`meta.truncated` 為 `true`）。地圖也改用這個 API 與 `/api/temples`。
+
+設定步驟：
+
+1. 在 [Supabase](https://supabase.com) 建立專案，到 SQL Editor 依序貼上執行 `supabase/migrations/0001_ai_explain.sql`、`0002_data.sql`。所有資料表都開啟 RLS 且不開放公開存取，只由伺服器以 service role 讀寫。
+2. 在 Vercel 的 Environment Variables 設定下表（Production 與 Preview 都要），重新部署。
+3. 在本機寫入宮廟資料並補歷史 A1：
+   ```bash
+   export SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=...
+   npm run db -- seed                       # 寫入 public/data 的宮廟（示範事件不會寫入）
+   npm run db -- import                     # 即時 A1
+   npm run db -- import --datasets 177136   # 補歷史：年度資料集（只取 A1）
+   ```
+4. 到 `/admin` 登入確認資料筆數；之後每天自動匯入。改用資料庫後請**不要**開啟 GitHub Actions 的每日排程（`A1_SCHEDULE_ENABLED`），兩邊會各自更新。
+
+| 變數 | 說明 |
+| --- | --- |
+| `SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY` | 資料庫；設定後事件、宮廟、匯入紀錄都改用資料庫 |
+| `CRON_SECRET` | 隨機長字串（例如 `openssl rand -hex 32`）；Vercel Cron 會帶這個值呼叫匯入，其他人無法觸發 |
+| `ADMIN_PASSWORD` | 後台密碼，至少 12 字元；沒設定時後台停用。改密碼會讓所有登入失效 |
+| `RESEND_API_KEY`、`ADMIN_EMAIL` | 選用：匯入失敗時寄信（[Resend](https://resend.com)）；`NOTIFY_FROM` 可指定寄件人 |
+| `A1_DATASETS`、`A1_URLS` | 選用：每日匯入的資料集編號（預設 12818）或直接指定 CSV 網址 |
+
+Vercel 免費方案的 Cron 每天只能執行一次、單次最長 60 秒，即時 A1 檔案很小，足夠使用。後台目前是單一管理員密碼；M4 加入會員登入後可改為帳號權限。
 
 ## 匯入真實資料
 
@@ -139,6 +170,8 @@ node tools/convert-a1.mjs A1.csv --since 2024-01-01
 
 ### 自動更新（GitHub Actions）
 
+> 已接上資料庫的話，改由 Vercel Cron 每日匯入（見上一節），這個 workflow 不需要開啟。
+
 `.github/workflows/update-a1.yml` 會從 data.gov.tw 下載 A1 資料 → 轉換 → 跑測試 → commit 到 `main` → 觸發正式站部署。
 
 1. **先手動試跑**：Actions → **Update A1 data** → Run workflow（可勾「只試跑」先看結果，摘要會顯示新增幾筆）。
@@ -174,13 +207,18 @@ lib/url-state.ts         網址參數 ↔ 畫面狀態
 lib/counties.ts          22 縣市清單與名稱正規化
 lib/county-stats.ts      縣市統計與縣市內的風險網格（與地圖預設畫面一致）
 lib/temple-schema.ts     宮廟資料欄位定義與驗證（格式錯誤會讓建置失敗）
-lib/server/              建置時讀取資料、產生分享圖
+lib/a1/                  A1 CSV 轉換與下載（命令列工具與每日匯入共用）
+lib/server/repo/         資料來源：files（public/data，唯讀）、supabase、memory（測試用）
+lib/server/              資料讀取、A1 匯入、管理員登入、AI 解說、分享圖
+app/api/                 事件與宮廟 API、每日匯入（cron）、後台 API、AI 解說
+app/(site)/admin/        管理後台
+supabase/migrations/     資料庫 schema（依序執行）
 public/sw.js             Service worker（離線快取）
 public/data/             incidents.json（事件）、temples.json（精選宮廟，座標為概略位置）
-tools/                   示範資料產生器、A1 轉換與自動下載、MapLibre worker 複製
+tools/                   示範資料產生器、A1 轉換與自動下載、資料庫維護（db.mjs）、MapLibre worker 複製
 tests/                   單元測試（含新舊版分級結果比對）
 e2e/                     Playwright 端對端測試
-vercel.json              Vercel 設定與安全標頭
+vercel.json              Vercel 設定、每日匯入排程與安全標頭
 .github/workflows/       ci-cd.yml（測試 → 部署）、update-a1.yml（每日更新 A1 資料）
 ```
 

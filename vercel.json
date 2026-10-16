@@ -4,6 +4,12 @@
   "git": {
     "deploymentEnabled": false
   },
+  "crons": [
+    {
+      "path": "/api/cron/import-a1",
+      "schedule": "17 1 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

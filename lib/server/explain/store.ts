@@ -1,5 +1,6 @@
 // 解說快取與用量限制。有設定 Supabase 就用資料庫（跨伺服器實例共用），否則退回單一實例的記憶體。
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '../supabase.ts';
 import type { ExplainResponse } from '../../explain/schema.ts';
 
 export interface ExplainStore {
@@ -77,10 +78,7 @@ let shared: ExplainStore | undefined;
 
 export function defaultStore(): ExplainStore {
   if (shared) return shared;
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  shared = url && key
-    ? new SupabaseStore(createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }))
-    : new MemoryStore();
+  const db = supabaseAdmin();
+  shared = db ? new SupabaseStore(db) : new MemoryStore();
   return shared;
 }

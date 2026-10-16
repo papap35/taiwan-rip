@@ -1,4 +1,5 @@
 # 自動更新 A1 交通事故資料：下載 → 轉換 → 測試 → commit 到 main → 觸發部署。
+# 適用於沒有資料庫、讀 public/data 檔案的部署；接上 Supabase 後改由 Vercel Cron（/api/cron/import-a1）匯入，不需開啟這裡的排程。
 #
 # 手動執行：Actions → Update A1 data → Run workflow
 # 每日排程：預設關閉。確認手動執行結果沒問題後，到 Settings → Secrets and variables →
