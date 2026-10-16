@@ -17,99 +17,14 @@
 
 import { writeFile, appendFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { parseCSV } from '../lib/data.ts';
-import { convertRows, decode, readExisting, buildOutput } from './convert-a1.mjs';
+import { readExisting, buildOutput } from './convert-a1.mjs';
+import { resolveSources, fetchAndConvert, applyRetention } from '../lib/a1/fetch.ts';
 
-const API_BASE = process.env.A1_API_BASE || 'https://data.gov.tw/api/v2/rest/dataset/';
-const DAY = 86400000;
-
-/**
- * 在資料集描述 JSON 中找出 CSV 下載網址。
- * 不依賴固定的欄位結構：遞迴尋找「含網址欄位、且格式標示或副檔名為 CSV」的物件。
- */
-export function findCsvUrls(json) {
-  const urls = new Set();
-  const walk = (node) => {
-    if (Array.isArray(node)) return node.forEach(walk);
-    if (!node || typeof node !== 'object') return;
-    const entries = Object.entries(node);
-    const format = entries
-      .filter(([k, v]) => /format|type|mime/i.test(k) && typeof v === 'string')
-      .map(([, v]) => v)
-      .join(' ');
-    for (const [k, v] of entries) {
-      if (typeof v !== 'string' || !/^https?:\/\//.test(v) || !/url|link|download|href/i.test(k)) continue;
-      if (/data\.gov\.tw\/dataset\//.test(v)) continue; // 資料集介紹頁，不是檔案
-      if (/csv/i.test(format) || /\.csv(\?|$)/i.test(v)) urls.add(v);
-    }
-    entries.forEach(([, v]) => walk(v));
-  };
-  walk(json);
-  return [...urls];
-}
-
-async function fetchWithRetry(url, { tries = 3, timeoutMs = 120000 } = {}) {
-  let lastErr;
-  for (let i = 0; i < tries; i++) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return new Uint8Array(await res.arrayBuffer());
-    } catch (err) {
-      lastErr = err;
-      if (i < tries - 1) await new Promise((r) => setTimeout(r, 2000 * 2 ** i));
-    }
-  }
-  throw new Error(`下載失敗（已重試 ${tries} 次）：${url}：${lastErr.message}`);
-}
-
-export async function resolveDataset(id) {
-  const buf = await fetchWithRetry(`${API_BASE}${encodeURIComponent(id)}`);
-  let json;
-  try {
-    json = JSON.parse(new TextDecoder().decode(buf));
-  } catch {
-    throw new Error(`資料集 ${id} 的描述不是 JSON，平臺 API 可能改版；請改用 --url 或 A1_URLS 直接指定下載網址`);
-  }
-  const urls = findCsvUrls(json);
-  if (!urls.length) throw new Error(`資料集 ${id} 找不到 CSV 下載網址；請改用 --url 或 A1_URLS 直接指定`);
-  return urls;
-}
-
-/** 下載並轉換單一 CSV，含格式安全檢查 */
-export async function fetchAndConvert(url) {
-  const text = decode(await fetchWithRetry(url));
-  if (/^\s*</.test(text)) throw new Error(`${url}：下載到的是網頁而不是 CSV，下載網址可能已失效`);
-  const rows = parseCSV(text);
-  const { incidents, skipped, nonA1 } = convertRows(rows);
-  const a1Rows = rows.length - nonA1;
-  if (a1Rows > 0 && !incidents.length) {
-    throw new Error(`${url}：${rows.length} 列全部無法轉換，官方欄位可能改變（表頭：${Object.keys(rows[0] ?? {}).join(',')}）`);
-  }
-  // 年度檔一個事故會有多列，所以用「無法解析的列」而非「轉出筆數」判斷
-  if (a1Rows > 10 && skipped / a1Rows > 0.5) {
-    throw new Error(`${url}：${skipped}/${a1Rows} 列無法解析，超過一半，官方格式可能改變`);
-  }
-  return { url, rows: rows.length, incidents, skipped, nonA1 };
-}
-
-/** 只保留最新事故往前 keepYears 年 */
-export function applyRetention(incidents, keepYears) {
-  if (!keepYears || !incidents.length) return incidents;
-  const latest = Math.max(...incidents.map((d) => Date.parse(d.date)));
-  const cutoff = new Date(latest - keepYears * 365 * DAY).toISOString().slice(0, 10);
-  return incidents.filter((d) => d.date >= cutoff);
-}
+// 下載與檢查邏輯在 lib/a1/fetch.ts（伺服器端每日匯入共用）；這裡保留舊的匯出名稱
+export { findCsvUrls, resolveDataset, fetchAndConvert, applyRetention } from '../lib/a1/fetch.ts';
 
 export async function run({ datasets = ['12818'], urls = [], out = 'public/data/incidents.json', keepYears = 3, dryRun = false, log = console.error }) {
-  const sources = [...urls];
-  if (!sources.length) {
-    for (const id of datasets) {
-      const found = await resolveDataset(id);
-      log(`資料集 ${id}：找到 ${found.length} 個 CSV`);
-      sources.push(...found);
-    }
-  }
+  const sources = await resolveSources({ datasets, urls }, log);
 
   const results = [];
   for (const url of sources) {

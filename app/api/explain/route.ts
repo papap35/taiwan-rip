@@ -16,7 +16,7 @@ function deps(): ExplainDeps {
     model,
     modelName: mock ? 'mock' : MODEL,
     data: async () => {
-      const [{ meta, list }, temples] = await Promise.all([loadIncidents(), loadTemples()]);
+      const [{ meta, list }, temples] = await Promise.all([loadIncidents({ maxAgeMs: 60_000 }), loadTemples()]);
       return { incidents: list, isDemo: meta.demo !== false, temples };
     },
     perIpPerHour: Number(process.env.AI_PER_IP_HOURLY_LIMIT) || 20,

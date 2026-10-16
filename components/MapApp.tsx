@@ -14,6 +14,12 @@ import SiteNav from './SiteNav';
 import { Wordmark } from './Logo';
 import type { MapViewHandle } from './map/MapView';
 import type { ExplainView } from './map/Popups';
+import { fromFeatures } from '@/lib/geojson.ts';
+
+const okJson = (r: Response) => {
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+};
 
 // 地圖只能在瀏覽器執行
 const MapView = dynamic(() => import('./map/MapView'), {
@@ -58,10 +64,10 @@ export default function MapApp() {
     (async () => {
       try {
         const [inc, tmp] = await Promise.all([
-          fetch('/data/incidents.json').then((r) => r.json()),
-          fetch('/data/temples.json').then((r) => r.json()),
+          fetch('/api/incidents').then(okJson),
+          fetch('/api/temples').then(okJson),
         ]);
-        const list = sortByTime(inc.incidents.map(normalizeIncident).filter(Boolean));
+        const list = sortByTime(fromFeatures(inc.features).map(normalizeIncident).filter((d): d is Incident => d !== null));
         const ds = { list, isDemo: inc.meta?.demo !== false };
         const url = parseUrlState(window.location.search);
         const last = list.at(-1)?.t ?? 0;

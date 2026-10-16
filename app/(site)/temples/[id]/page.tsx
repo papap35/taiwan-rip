@@ -9,7 +9,7 @@ import { PageTitle, Section } from '@/components/ui';
 
 const UNKNOWN = <span className="text-muted">尚未確認，請以宮廟公告為準</span>;
 
-export const dynamicParams = false;
+// 後台新增的宮廟沒有預先產生，第一次瀏覽時產生
 export async function generateStaticParams() {
   return (await loadTemples()).map((t) => ({ id: t.id }));
 }

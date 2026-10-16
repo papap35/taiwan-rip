@@ -1,12 +1,12 @@
 // Service worker：讓網站可加到主畫面，並在離線時顯示最後一次載入的資料。
 // 改了快取策略請把 VERSION 加一，舊快取會在啟用時清掉。
-const VERSION = 'v1';
+const VERSION = 'v2';
 const STATIC = `static-${VERSION}`; // 檔名含雜湊的靜態檔：快取優先
 const PAGES = `pages-${VERSION}`; // 頁面：網路優先，離線用快取
 const DATA = `data-${VERSION}`; // 事件與宮廟資料：網路優先，離線用快取
 const TILES = `tiles-${VERSION}`; // 地圖底圖：先給快取再背景更新，上限 600 筆
 const TILE_LIMIT = 600;
-const PRECACHE = ['/', '/data/incidents.json', '/data/temples.json'];
+const PRECACHE = ['/', '/api/incidents', '/api/temples'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -81,9 +81,9 @@ self.addEventListener('fetch', (event) => {
   if (url.origin === self.location.origin) {
     if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/maplibre/') || url.pathname.startsWith('/icons/')) {
       event.respondWith(cacheFirst(request));
-    } else if (url.pathname.startsWith('/data/')) {
+    } else if (url.pathname.startsWith('/data/') || url.pathname === '/api/incidents' || url.pathname === '/api/temples') {
       event.respondWith(networkFirst(request, DATA));
-    } else if (request.mode === 'navigate') {
+    } else if (request.mode === 'navigate' && !url.pathname.startsWith('/admin')) {
       event.respondWith(networkFirst(request, PAGES, '/'));
     }
     return;

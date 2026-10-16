@@ -16,7 +16,8 @@
     "update:a1": "node tools/fetch-a1.mjs",
     "og-font": "node tools/build-og-font.mjs",
     "icons": "node tools/build-icons.mjs",
-    "eval:explain": "node tools/eval-explain.mjs"
+    "eval:explain": "node tools/eval-explain.mjs",
+    "db": "node tools/db.mjs"
   },
   "engines": {
     "node": ">=22.18"
@@ -32,6 +33,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
     "@playwright/test": "1.56.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/geojson": "7946.0.16",
