@@ -13,9 +13,9 @@ import { countyBySlug } from '../lib/counties.ts';
 import { explain } from '../lib/server/explain/service.ts';
 import { MemoryStore } from '../lib/server/explain/store.ts';
 
-const json = JSON.parse(await readFile(new URL('../public/data/incidents.json', import.meta.url), 'utf8'));
+const json = JSON.parse(await readFile(new URL('./fixtures/data/incidents.json', import.meta.url), 'utf8'));
 const incidents = json.incidents.map(normalizeIncident).filter(Boolean).sort((a, b) => a.t - b.t);
-const { temples } = JSON.parse(await readFile(new URL('../public/data/temples.json', import.meta.url), 'utf8'));
+const { temples } = JSON.parse(await readFile(new URL('./fixtures/data/temples.json', import.meta.url), 'utf8'));
 const endT = incidents.at(-1).t;
 const end = new Date(endT).toISOString().slice(0, 10);
 const view = { endT, windowDays: 90, types: new Set(TYPE_KEYS) };

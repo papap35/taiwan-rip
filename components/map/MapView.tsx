@@ -41,7 +41,8 @@ interface Props {
   me: { lat: number; lng: number } | null;
   initialView?: { lat: number; lng: number; zoom: number };
   onViewChange(view: { lat: number; lng: number; zoom: number }): void;
-  onBackgroundClick(): void;
+  /** 點地圖任何位置（含事件點、網格） */
+  onMapClick(): void;
 }
 
 type PopupState =
@@ -53,7 +54,7 @@ type PopupState =
 const typeColor = ['match', ['get', 'type'], ...Object.entries(TYPES).flatMap(([k, v]) => [k, v.color]), '#9e9e9e'];
 const levelColor = ['match', ['get', 'level'], ...LEVELS.flatMap((l, i) => [i, l.color]), '#9e9e9e'];
 
-export default function MapView({ apiRef, incidents, cells, explainView, temples, layers, me, initialView, onViewChange, onBackgroundClick }: Props) {
+export default function MapView({ apiRef, incidents, cells, explainView, temples, layers, me, initialView, onViewChange, onMapClick }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [popup, setPopup] = useState<PopupState>(null);
   const [zoom, setZoom] = useState(initialView?.zoom ?? 7);
@@ -100,10 +101,10 @@ export default function MapView({ apiRef, incidents, cells, explainView, temples
   );
 
   async function handleClick(e: MapLayerMouseEvent) {
+    onMapClick(); // 手機：點地圖任何地方都收起設定抽屜
     const f = e.features?.[0];
     if (!f) {
       setPopup(null);
-      onBackgroundClick();
       return;
     }
     const p = f.properties as Record<string, any>;

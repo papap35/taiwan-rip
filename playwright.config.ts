@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
-// 端對端測試：先 `npm run build`，再 `npm run e2e`（會自動啟動 next start）
+// 端對端測試：`npm run e2e` 會用固定的測試資料（tests/fixtures/data）另外建置到 .next-e2e 再啟動，
+// 測試結果不受網站實際資料（示範或真實 A1）影響。
 export default defineConfig({
   testDir: 'e2e',
   timeout: 30_000,
@@ -22,10 +23,12 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'npx next start -p 3123',
+      command: 'node tools/copy-maplibre-worker.mjs && npx next build && npx next start -p 3123',
       url: 'http://localhost:3123',
       reuseExistingServer: !process.env.CI,
       env: {
+        NEXT_DIST_DIR: '.next-e2e',
+        DATA_DIR: 'tests/fixtures/data',
         // AI 解說用測試模式（不呼叫 Claude API）
         AI_EXPLAIN_MOCK: '1',
         AI_PER_IP_HOURLY_LIMIT: '1000',
@@ -35,7 +38,7 @@ export default defineConfig({
         CRON_SECRET: 'e2e-cron-secret',
         A1_URLS: 'http://127.0.0.1:3124/a1.csv',
       },
-      timeout: 60_000,
+      timeout: 300_000,
     },
     { command: 'node e2e/a1-server.mjs', url: 'http://127.0.0.1:3124/', reuseExistingServer: !process.env.CI },
   ],

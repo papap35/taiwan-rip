@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "name": "收驚／祈福宮廟精選",
+    "disclaimer": "座標為概略位置；收驚服務時段、是否需預約請以各宮廟公告為準。更多附近宮廟可在地圖上用「搜尋附近宮廟」即時從 OpenStreetMap 查詢。",
+    "fields": "必填：id、name、county、lat、lng、shoujing；選填：deity、note、address、phone、website、shoujingHours、needsBooking、verifiedOn（格式見 lib/temple-schema.ts）。未確認的資訊請留空，不要猜。"
+  },
+  "temples": [
+    {
+      "id": "taipei-xingtian-temple",
+      "name": "行天宮",
+      "county": "臺北市",
+      "lat": 25.063,
+      "lng": 121.5336,
+      "deity": "關聖帝君",
+      "shoujing": true,
+      "note": "以收驚聞名，由效勞生協助"
+    },
+    {
+      "id": "taipei-longshan-temple",
+      "name": "艋舺龍山寺",
+      "county": "臺北市",
+      "lat": 25.0372,
+      "lng": 121.4999,
+      "deity": "觀世音菩薩",
+      "shoujing": false,
+      "note": "祈福、安太歲"
+    },
+    {
+      "id": "taipei-xiahai-city-god-temple",
+      "name": "臺北霞海城隍廟",
+      "county": "臺北市",
+      "lat": 25.0558,
+      "lng": 121.51,
+      "deity": "城隍爺",
+      "shoujing": false,
+      "note": "城隍信仰"
+    },
+    {
+      "id": "keelung-qingan-temple",
+      "name": "基隆慶安宮",
+      "county": "基隆市",
+      "lat": 25.1306,
+      "lng": 121.7425,
+      "deity": "天上聖母",
+      "shoujing": false,
+      "note": "媽祖廟"
+    },
+    {
+      "id": "taoyuan-jingfu-temple",
+      "name": "桃園景福宮",
+      "county": "桃園市",
+      "lat": 24.9935,
+      "lng": 121.3119,
+      "deity": "開漳聖王",
+      "shoujing": false,
+      "note": "桃園大廟"
+    },
+    {
+      "id": "hsinchu-city-god-temple",
+      "name": "新竹都城隍廟",
+      "county": "新竹市",
+      "lat": 24.8045,
+      "lng": 120.9659,
+      "deity": "城隍爺",
+      "shoujing": true,
+      "note": "城隍信仰，可詢問收驚"
+    },
+    {
+      "id": "dajia-jenn-lann-temple",
+      "name": "大甲鎮瀾宮",
+      "county": "臺中市",
+      "lat": 24.3466,
+      "lng": 120.623,
+      "deity": "天上聖母",
+      "shoujing": true,
+      "note": "媽祖廟，可詢問收驚"
+    },
+    {
+      "id": "lukang-tianhou-temple",
+      "name": "鹿港天后宮",
+      "county": "彰化縣",
+      "lat": 24.0574,
+      "lng": 120.4335,
+      "deity": "天上聖母",
+      "shoujing": false,
+      "note": "媽祖廟"
+    },
+    {
+      "id": "beigang-chaotian-temple",
+      "name": "北港朝天宮",
+      "county": "雲林縣",
+      "lat": 23.5677,
+      "lng": 120.3047,
+      "deity": "天上聖母",
+      "shoujing": true,
+      "note": "媽祖廟，可詢問收驚"
+    },
+    {
+      "id": "chiayi-city-god-temple",
+      "name": "嘉義城隍廟",
+      "county": "嘉義市",
+      "lat": 23.4813,
+      "lng": 120.4534,
+      "deity": "城隍爺",
+      "shoujing": false,
+      "note": "城隍信仰"
+    },
+    {
+      "id": "tainan-grand-matsu-temple",
+      "name": "臺南大天后宮",
+      "county": "臺南市",
+      "lat": 22.9973,
+      "lng": 120.2025,
+      "deity": "天上聖母",
+      "shoujing": false,
+      "note": "媽祖廟"
+    },
+    {
+      "id": "tainan-sacrificial-martial-temple",
+      "name": "臺南祀典武廟",
+      "county": "臺南市",
+      "lat": 22.9966,
+      "lng": 120.203,
+      "deity": "關聖帝君",
+      "shoujing": false,
+      "note": "關帝廟"
+    },
+    {
+      "id": "kaohsiung-sanfeng-temple",
+      "name": "高雄三鳳宮",
+      "county": "高雄市",
+      "lat": 22.645,
+      "lng": 120.293,
+      "deity": "中壇元帥",
+      "shoujing": true,
+      "note": "可詢問收驚"
+    },
+    {
+      "id": "donggang-donglong-temple",
+      "name": "東港東隆宮",
+      "county": "屏東縣",
+      "lat": 22.4626,
+      "lng": 120.4489,
+      "deity": "溫府千歲",
+      "shoujing": false,
+      "note": "王爺信仰"
+    },
+    {
+      "id": "jiaoxi-xietian-temple",
+      "name": "礁溪協天廟",
+      "county": "宜蘭縣",
+      "lat": 24.8297,
+      "lng": 121.7717,
+      "deity": "關聖帝君",
+      "shoujing": false,
+      "note": "關帝廟"
+    },
+    {
+      "id": "taitung-tianhou-temple",
+      "name": "臺東天后宮",
+      "county": "臺東縣",
+      "lat": 22.7537,
+      "lng": 121.1497,
+      "deity": "天上聖母",
+      "shoujing": false,
+      "note": "媽祖廟"
+    },
+    {
+      "id": "penghu-tianhou-temple",
+      "name": "澎湖天后宮",
+      "county": "澎湖縣",
+      "lat": 23.566,
+      "lng": 119.564,
+      "deity": "天上聖母",
+      "shoujing": false,
+      "note": "臺灣最古老媽祖廟之一"
+    }
+  ]
+}

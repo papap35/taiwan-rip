@@ -115,6 +115,8 @@ export default function MapApp() {
         { end: fmt(endT), window: windowDays, types: TYPE_KEYS.filter((t) => types.has(t)), view },
         fmt(maxT),
       );
+      // 網址沒變就不要動：在換頁途中呼叫 replaceState 會被 Next.js 當成導回地圖，讓使用者點的連結失效
+      if (window.location.search === q) return;
       window.history.replaceState(null, '', `${window.location.pathname}${q}`);
     }, 300);
     return () => clearTimeout(id);
@@ -270,7 +272,7 @@ export default function MapApp() {
             me={me}
             initialView={initialView}
             onViewChange={setView}
-            onBackgroundClick={() => setPanelOpen(false)}
+            onMapClick={() => setPanelOpen(false)}
           />
         )}
         {ready && data.list.length > 0 && (

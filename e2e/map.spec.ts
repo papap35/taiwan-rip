@@ -56,8 +56,9 @@ test('shared URL restores the same view', async ({ page, errors }) => {
 });
 
 test('clicking an incident and a grid cell opens their popups', async ({ page, request, errors }) => {
-  const { incidents } = await (await request.get('/data/incidents.json')).json();
-  const d = incidents.at(-1); // 預設時間窗內最新的一起
+  const { features } = await (await request.get('/api/incidents')).json();
+  const f = features.at(-1); // 預設時間窗內最新的一起
+  const d = { ...f.properties, lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] };
   await page.goto(`/?lat=${d.lat}&lng=${d.lng}&z=16`);
   await expect(countLabel(page)).toContainText('起事件');
   await page.waitForTimeout(1500); // 等地圖繪製完成
